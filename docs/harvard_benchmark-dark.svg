@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="434" viewBox="0 0 760 434" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" role="img" aria-labelledby="t d">
+<title id="t">your.harvard: tempo das 7 consultas antes e depois dos índices</title>
+<desc id="d">Q1: 36.21 ms antes, 0.019 ms depois; Q2: 42.45 ms antes, 0.026 ms depois; Q3: 349.00 ms antes, 4.010 ms depois; Q4: 0.73 ms antes, 0.042 ms depois; Q5: 0.32 ms antes, 0.002 ms depois; Q6: 28.78 ms antes, 0.025 ms depois; Q7: 1.01 ms antes, 1.013 ms depois</desc>
+<rect width="760" height="434" rx="8" fill="#1a1a19"/>
+<text x="24" y="36" font-size="17" font-weight="600" fill="#f0efec">Índices no your.harvard: até 1.930× mais rápido</text>
+<text x="24" y="58" font-size="13" fill="#c3c2b7">Mediana de 5 execuções por consulta · 1,6 milhão de matrículas · escala logarítmica</text>
+<circle cx="29" cy="84" r="5" fill="#256abf"/>
+<text x="40" y="88.5" font-size="12.5" fill="#c3c2b7">Sem índices</text>
+<circle cx="179" cy="84" r="5" fill="#9ec5f4"/>
+<text x="190" y="88.5" font-size="12.5" fill="#c3c2b7">Com indexes.sql</text>
+<line x1="250.0" y1="96" x2="250.0" y2="366" stroke="#2c2c2a" stroke-width="1"/>
+<text x="250.0" y="384" font-size="11.5" fill="#898781" text-anchor="middle">1 µs</text>
+<line x1="308.3" y1="96" x2="308.3" y2="366" stroke="#2c2c2a" stroke-width="1"/>
+<text x="308.3" y="384" font-size="11.5" fill="#898781" text-anchor="middle">10 µs</text>
+<line x1="366.7" y1="96" x2="366.7" y2="366" stroke="#2c2c2a" stroke-width="1"/>
+<text x="366.7" y="384" font-size="11.5" fill="#898781" text-anchor="middle">0,1 ms</text>
+<line x1="425.0" y1="96" x2="425.0" y2="366" stroke="#2c2c2a" stroke-width="1"/>
+<text x="425.0" y="384" font-size="11.5" fill="#898781" text-anchor="middle">1 ms</text>
+<line x1="483.3" y1="96" x2="483.3" y2="366" stroke="#2c2c2a" stroke-width="1"/>
+<text x="483.3" y="384" font-size="11.5" fill="#898781" text-anchor="middle">10 ms</text>
+<line x1="541.7" y1="96" x2="541.7" y2="366" stroke="#2c2c2a" stroke-width="1"/>
+<text x="541.7" y="384" font-size="11.5" fill="#898781" text-anchor="middle">100 ms</text>
+<line x1="600.0" y1="96" x2="600.0" y2="366" stroke="#2c2c2a" stroke-width="1"/>
+<text x="600.0" y="384" font-size="11.5" fill="#898781" text-anchor="middle">1 s</text>
+<text x="425.0" y="404" font-size="11.5" fill="#898781" text-anchor="middle">tempo por consulta</text>
+<text x="24" y="124.5" font-size="13" fill="#f0efec"><tspan font-weight="600">Q1</tspan>  Disciplinas de um aluno</text>
+<line x1="515.9" y1="120" x2="324.3" y2="120" stroke="#383835" stroke-width="2" stroke-linecap="round"/>
+<circle cx="515.9" cy="120" r="5.5" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="324.3" cy="120" r="5.5" fill="#9ec5f4" stroke="#1a1a19" stroke-width="2"/>
+<text x="620" y="124.5" font-size="13" font-weight="600" fill="#f0efec">1.930× mais rápida</text>
+<text x="24" y="162.5" font-size="13" fill="#f0efec"><tspan font-weight="600">Q2</tspan>  Alunos de CS50 no Fall 2023</text>
+<line x1="520.0" y1="158" x2="332.3" y2="158" stroke="#383835" stroke-width="2" stroke-linecap="round"/>
+<circle cx="520.0" cy="158" r="5.5" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="332.3" cy="158" r="5.5" fill="#9ec5f4" stroke="#1a1a19" stroke-width="2"/>
+<text x="620" y="162.5" font-size="13" font-weight="600" fill="#f0efec">1.650× mais rápida</text>
+<text x="24" y="200.5" font-size="13" fill="#f0efec"><tspan font-weight="600">Q3</tspan>  Matrículas por disciplina</text>
+<line x1="573.3" y1="196" x2="460.2" y2="196" stroke="#383835" stroke-width="2" stroke-linecap="round"/>
+<circle cx="573.3" cy="196" r="5.5" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="460.2" cy="196" r="5.5" fill="#9ec5f4" stroke="#1a1a19" stroke-width="2"/>
+<text x="620" y="200.5" font-size="13" font-weight="600" fill="#f0efec">87× mais rápida</text>
+<text x="24" y="238.5" font-size="13" fill="#f0efec"><tspan font-weight="600">Q4</tspan>  Disciplinas de CS no Spring 2024</text>
+<line x1="417.1" y1="234" x2="344.6" y2="234" stroke="#383835" stroke-width="2" stroke-linecap="round"/>
+<circle cx="417.1" cy="234" r="5.5" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="344.6" cy="234" r="5.5" fill="#9ec5f4" stroke="#1a1a19" stroke-width="2"/>
+<text x="620" y="238.5" font-size="13" font-weight="600" fill="#f0efec">17× mais rápida</text>
+<text x="24" y="276.5" font-size="13" fill="#f0efec"><tspan font-weight="600">Q5</tspan>  Requisito de uma disciplina</text>
+<line x1="396.4" y1="272" x2="261.6" y2="272" stroke="#383835" stroke-width="2" stroke-linecap="round"/>
+<circle cx="396.4" cy="272" r="5.5" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="261.6" cy="272" r="5.5" fill="#9ec5f4" stroke="#1a1a19" stroke-width="2"/>
+<text x="620" y="276.5" font-size="13" font-weight="600" fill="#f0efec">200× mais rápida</text>
+<text x="24" y="314.5" font-size="13" fill="#f0efec"><tspan font-weight="600">Q6</tspan>  Disciplinas por requisito</text>
+<line x1="510.1" y1="310" x2="332.0" y2="310" stroke="#383835" stroke-width="2" stroke-linecap="round"/>
+<circle cx="510.1" cy="310" r="5.5" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="332.0" cy="310" r="5.5" fill="#9ec5f4" stroke="#1a1a19" stroke-width="2"/>
+<text x="620" y="314.5" font-size="13" font-weight="600" fill="#f0efec">1.130× mais rápida</text>
+<text x="24" y="352.5" font-size="13" fill="#f0efec"><tspan font-weight="600">Q7</tspan>  Busca por prefixo de título</text>
+<line x1="425.3" y1="348" x2="425.3" y2="348" stroke="#383835" stroke-width="2" stroke-linecap="round"/>
+<circle cx="425.3" cy="348" r="5.5" fill="#256abf" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="425.3" cy="348" r="5.5" fill="#9ec5f4" stroke="#1a1a19" stroke-width="2"/>
+<text x="620" y="352.5" font-size="13" font-weight="400" fill="#898781">sem ganho</text>
+</svg>

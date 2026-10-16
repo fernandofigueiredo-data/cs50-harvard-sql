@@ -1,0 +1,8 @@
+consulta,descricao,antes_ms,depois_ms
+Q1,Disciplinas de um aluno,36.205625,0.018750
+Q2,Alunos de CS50 no Fall 2023,42.451875,0.025792
+Q3,Matrículas por disciplina,349.001458,4.009833
+Q4,Disciplinas de CS no Spring 2024,0.731083,0.041875
+Q5,Requisito de uma disciplina,0.323209,0.001583
+Q6,Disciplinas por requisito,28.781750,0.025459
+Q7,Busca por prefixo de título,1.012041,1.012959

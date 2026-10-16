@@ -1,0 +1,19 @@
+# Valida o schema MySQL de 07-escala/connect-mysql num MySQL 8.0 descartável.
+# Roda só quando essa pasta ou o script mudam, ou manualmente.
+name: Verificação MySQL
+
+on:
+  push:
+    paths:
+      - '07-escala/connect-mysql/**'
+      - 'scripts/verificar_mysql.sh'
+  workflow_dispatch:
+
+jobs:
+  mysql:
+    name: Schema MySQL 8.0
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar schema e constraints
+        run: ./scripts/verificar_mysql.sh

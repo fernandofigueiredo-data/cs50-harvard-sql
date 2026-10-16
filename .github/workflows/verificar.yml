@@ -1,0 +1,38 @@
+# Roda todas as soluções contra os bancos oficiais do CS50 a cada push.
+# O resultado aparece no badge do README.
+name: Verificação
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  sqlite:
+    name: Soluções (SQLite)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar sqlite3
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q sqlite3
+          sqlite3 --version
+
+      # Os bancos somam ~170 MB; o cache evita baixá-los de novo a cada push.
+      - name: Cache dos bancos do CS50
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/*.db
+            04-escrita/meteorites/meteorites.csv
+          key: dados-cs50-${{ hashFiles('scripts/baixar_dados.sh') }}
+
+      - name: Baixar bancos oficiais
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./scripts/baixar_dados.sh
+
+      - name: Verificar soluções
+        run: ./scripts/verificar.sh

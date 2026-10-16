@@ -1,0 +1,11 @@
+# Bancos de dados e dados brutos da distribuição do CS50 (baixe com ./scripts/baixar_dados.sh)
+*.db
+*.db-journal
+*.zip
+04-escrita/meteorites/meteorites.csv
+
+# Sistema e editores
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
