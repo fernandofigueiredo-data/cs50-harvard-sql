@@ -1,0 +1,2642 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQLite: Fundamentos e Manual</title>
+<meta name="description" content="Referência em português dos fundamentos de SQLite e manual dos comandos do cliente sqlite3 e das instruções SQL mais usadas.">
+<style>
+/* ==========================================================
+   Tokens — design-system/MASTER.md
+   ========================================================== */
+:root{
+  --color-ink:#003B57;
+  --color-brand:#0F80CC;
+  --color-link:#0A6AAD;
+  --color-sky:#97D9F6;
+  --color-sky-tint:#E8F5FC;
+  --color-bg:#FFFFFF;
+  --color-surface:#F5F9FC;
+  --color-border:#D5E3EC;
+  --color-text:#16313F;
+  --color-text-muted:#4A6372;
+  --color-on-ink:#FFFFFF;
+  --color-success:#1F7A4D;
+  --color-note-bg:#FFF7E6;
+  --color-note-border:#C58A1B;
+  --color-note-text:#5A3B00;
+
+  --code-bg:#052638;
+  --code-header-bg:#0A3349;
+  --code-fg:#E3F1F8;
+  --code-label:#B5CCD8;
+  --syn-keyword:#7FCDF5;
+  --syn-function:#B8E4FA;
+  --syn-string:#9FE3C8;
+  --syn-number:#F7C97E;
+  --syn-comment:#8FAFC0;
+  --syn-command:#FFD27A;
+  --syn-placeholder:#FFFFFF;
+  --syn-placeholder-bg:rgba(151,217,246,.16);
+
+  --gradient-brand:linear-gradient(180deg,#97D9F6 0%,#0F80CC 100%);
+
+  --font-heading:"Newsreader","Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+
+  --text-xs:.8125rem;
+  --text-sm:.875rem;
+  --text-base:1rem;
+  --text-code:.875rem;
+  --text-lg:1.125rem;
+  --text-xl:1.375rem;
+  --text-2xl:1.75rem;
+  --text-3xl:clamp(2.25rem,5vw,3.25rem);
+
+  --space-xs:4px;
+  --space-sm:8px;
+  --space-md:16px;
+  --space-lg:24px;
+  --space-xl:32px;
+  --space-2xl:48px;
+  --space-3xl:64px;
+
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:16px;
+  --radius-pill:999px;
+
+  --shadow-sm:0 1px 2px rgba(0,59,87,.06);
+  --shadow-md:0 4px 12px rgba(0,59,87,.08);
+  --shadow-lg:0 12px 28px rgba(0,59,87,.14);
+
+  --header-h:64px;
+  --sidebar-w:288px;
+  --content-w:820px;
+  --ease:cubic-bezier(.2,.7,.3,1);
+}
+
+/* ==========================================================
+   Base
+   ========================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--color-bg);color:var(--color-text);
+  font:400 var(--text-base)/1.6 var(--font-body);
+  overflow-x:hidden;
+}
+h1,h2,h3,h4{font-family:var(--font-heading);color:var(--color-ink);line-height:1.25;margin:0}
+p{margin:0 0 var(--space-md)}
+a{color:var(--color-link);text-underline-offset:2px}
+a:hover{text-decoration-thickness:2px}
+code{font-family:var(--font-mono);font-size:.92em;font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0}
+:not(pre)>code{background:var(--color-sky-tint);color:var(--color-ink);padding:1px 6px;border-radius:var(--radius-sm);overflow-wrap:anywhere}
+button,input{font:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--color-brand);outline-offset:2px}
+.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+[hidden]{display:none!important}
+
+.skip-link{
+  position:absolute;left:var(--space-md);top:-100px;z-index:100;
+  background:var(--color-ink);color:var(--color-on-ink);padding:10px 16px;border-radius:var(--radius-md);
+  font-weight:600;text-decoration:none;transition:top 150ms var(--ease);
+}
+.skip-link:focus{top:var(--space-sm)}
+
+/* ==========================================================
+   Cabeçalho fixo
+   ========================================================== */
+.topbar{
+  position:fixed;inset:0 0 auto 0;height:var(--header-h);z-index:40;
+  display:flex;align-items:center;gap:var(--space-md);
+  padding:0 var(--space-md);
+  background:rgba(255,255,255,.96);border-bottom:1px solid var(--color-border);
+  box-shadow:var(--shadow-sm);
+}
+.topbar::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#97D9F6,#0F80CC 60%,#003B57)}
+.menu-btn{
+  display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;
+  border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-bg);color:var(--color-ink);
+  font-weight:600;font-size:var(--text-sm);transition:background 150ms var(--ease);
+}
+.menu-btn:hover{background:var(--color-sky-tint)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--color-ink);min-width:0}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;background:var(--gradient-brand);flex:none;
+  display:grid;place-items:center;box-shadow:inset 0 -2px 0 rgba(0,59,87,.25);
+}
+.brand-mark svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand-text{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.brand-name{font-family:var(--font-heading);font-weight:600;font-size:1.25rem}
+.brand-sub{font-size:var(--text-xs);color:var(--color-text-muted);white-space:nowrap}
+.part-switch{display:none;gap:4px;margin-left:var(--space-md);padding:4px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-pill)}
+.part-switch a{
+  padding:6px 14px;border-radius:var(--radius-pill);text-decoration:none;color:var(--color-text);
+  font-size:var(--text-sm);font-weight:500;transition:background 150ms var(--ease),color 150ms var(--ease);
+}
+.part-switch a:hover{background:var(--color-sky-tint);color:var(--color-ink)}
+.part-switch a[aria-current="true"]{background:var(--color-ink);color:var(--color-on-ink)}
+.search-wrap{position:relative;margin-left:auto;flex:1 1 0;max-width:380px;min-width:0}
+.search-wrap .i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--color-text-muted);pointer-events:none}
+.search{
+  width:100%;height:44px;padding:0 44px 0 40px;border:1px solid var(--color-border);border-radius:var(--radius-md);
+  background:var(--color-bg);color:var(--color-text);font-size:var(--text-base);
+  transition:border-color 150ms var(--ease),box-shadow 150ms var(--ease);
+}
+.search::placeholder{color:var(--color-text-muted)}
+.search:focus{border-color:var(--color-link);box-shadow:0 0 0 3px rgba(15,128,204,.25);outline:none}
+.search::-webkit-search-cancel-button{display:none}
+.kbd{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font:600 var(--text-xs)/1 var(--font-mono);color:var(--color-text-muted);
+  border:1px solid var(--color-border);border-bottom-width:2px;border-radius:5px;padding:3px 6px;background:var(--color-surface);
+}
+.search-clear{
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;
+  display:grid;place-items:center;border:0;background:transparent;color:var(--color-text-muted);border-radius:var(--radius-sm);
+}
+.search-clear:hover{background:var(--color-sky-tint);color:var(--color-ink)}
+
+/* ==========================================================
+   Barra lateral
+   ========================================================== */
+.sidebar{
+  position:fixed;top:var(--header-h);bottom:0;left:0;width:min(86vw,var(--sidebar-w));z-index:35;
+  background:var(--color-surface);border-right:1px solid var(--color-border);
+  overflow-y:auto;overscroll-behavior:contain;padding:var(--space-lg) var(--space-md) var(--space-2xl);
+  transform:translateX(-102%);transition:transform 220ms var(--ease);box-shadow:var(--shadow-lg);
+}
+body.nav-open .sidebar{transform:none}
+.backdrop{position:fixed;inset:var(--header-h) 0 0 0;background:rgba(0,38,56,.35);z-index:30;opacity:0;pointer-events:none;transition:opacity 200ms var(--ease)}
+body.nav-open .backdrop{opacity:1;pointer-events:auto}
+.nav-part{margin-bottom:var(--space-lg)}
+.nav-part-title{
+  display:flex;align-items:center;gap:10px;margin:0 0 var(--space-sm);padding:0 12px;
+  font:600 var(--text-xs)/1.4 var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted);
+}
+.nav-part-title::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--gradient-brand);flex:none}
+.nav-list{list-style:none;margin:0;padding:0}
+.nav-list a{
+  display:block;padding:7px 12px 7px 13px;border-radius:var(--radius-sm);border-left:3px solid transparent;
+  color:var(--color-text);text-decoration:none;font-size:var(--text-sm);line-height:1.4;
+  transition:background 150ms var(--ease),color 150ms var(--ease),border-color 150ms var(--ease);
+}
+.nav-list a:hover{background:var(--color-sky-tint);color:var(--color-ink)}
+.nav-list a[aria-current="true"]{background:var(--color-sky-tint);color:var(--color-ink);border-left-color:var(--color-brand);font-weight:600}
+.nav-list .count{float:right;font-size:var(--text-xs);color:var(--color-text-muted);font-weight:500}
+
+/* ==========================================================
+   Conteúdo
+   ========================================================== */
+main{padding:calc(var(--header-h) + var(--space-xl)) var(--space-md) var(--space-3xl)}
+.wrap{max-width:var(--content-w);margin:0 auto}
+section,[id]{scroll-margin-top:calc(var(--header-h) + 16px)}
+
+.hero{
+  position:relative;padding:var(--space-xl) var(--space-lg);border:1px solid var(--color-border);border-radius:var(--radius-lg);
+  background:linear-gradient(160deg,var(--color-sky-tint) 0%,var(--color-bg) 70%);margin-bottom:var(--space-3xl);overflow:hidden;
+}
+.hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:36px;background:var(--gradient-brand);opacity:.18;transform:rotate(12deg)}
+.hero h1{font-size:var(--text-3xl);font-weight:600;letter-spacing:-.01em;margin-bottom:var(--space-md);position:relative}
+.hero .lead{font-size:var(--text-lg);max-width:62ch;position:relative}
+.legend{display:grid;gap:var(--space-sm);margin:var(--space-lg) 0 0;padding:0;list-style:none;font-size:var(--text-sm);color:var(--color-text-muted);position:relative}
+.legend li{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);align-items:baseline;gap:var(--space-sm) var(--space-md)}
+.legend li>:first-child{justify-self:start}
+@media (max-width:599px){.legend li{grid-template-columns:minmax(0,1fr)}}
+.legend .ph-demo{font:italic 500 var(--text-sm) var(--font-mono);color:var(--color-ink);background:var(--color-sky-tint);border-bottom:1px dashed var(--color-brand);padding:0 4px;border-radius:3px}
+.legend .note-demo{display:inline-block;width:22px;height:14px;background:var(--color-note-bg);border-left:3px solid var(--color-note-border);border-radius:0 3px 3px 0}
+
+.part{margin-bottom:var(--space-3xl)}
+.part-head{display:flex;align-items:flex-end;gap:var(--space-md);padding-bottom:var(--space-md);margin-bottom:var(--space-xl);border-bottom:2px solid var(--color-ink)}
+.part-num{
+  width:52px;height:52px;border-radius:14px;background:var(--gradient-brand);flex:none;
+  display:grid;place-items:center;color:#fff;font:700 1.375rem/1 var(--font-heading);text-shadow:0 1px 2px rgba(0,59,87,.5)
+}
+.part-head h2{font-size:var(--text-3xl);font-weight:600;letter-spacing:-.01em}
+.part-head p{margin:4px 0 0;color:var(--color-text-muted)}
+.part-intro{max-width:72ch;margin-bottom:var(--space-xl)}
+
+.group{margin-bottom:var(--space-2xl)}
+.group-title{font-size:var(--text-2xl);font-weight:600;margin-bottom:var(--space-sm)}
+.group-desc{color:var(--color-text-muted);max-width:72ch;margin-bottom:var(--space-lg)}
+
+.entry{
+  background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-lg);
+  padding:var(--space-lg) var(--space-md);box-shadow:var(--shadow-sm);margin-bottom:var(--space-lg);
+}
+.entry>*:last-child{margin-bottom:0}
+.entry h3{font-size:var(--text-xl);font-weight:600;margin-bottom:var(--space-sm);display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-sm)}
+.entry p,.entry ul,.entry ol{max-width:72ch}
+.entry ul,.entry ol{padding-left:1.25rem;margin:0 0 var(--space-md)}
+.entry li{margin-bottom:4px}
+.entry h4{font:600 var(--text-xs)/1.4 var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted);margin:var(--space-md) 0 var(--space-sm)}
+.cmd h3{font-family:var(--font-mono);font-size:1.1875rem;color:var(--color-ink)}
+.cat-tag{
+  font:500 var(--text-xs)/1.4 var(--font-body);color:var(--color-ink);background:var(--color-sky-tint);
+  padding:2px 10px;border-radius:var(--radius-pill);letter-spacing:0;text-transform:none
+}
+.field-label{font-weight:600;color:var(--color-ink)}
+.result{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:10px 14px;font-size:var(--text-sm)}
+.result .field-label{display:block;font-size:var(--text-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:2px}
+
+.badge-doc{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;vertical-align:middle;
+  border:1px solid var(--color-border);border-radius:var(--radius-pill);background:var(--color-bg);
+  font:500 var(--text-xs)/1.4 var(--font-body);color:var(--color-text-muted);text-decoration:none;white-space:nowrap;
+  transition:border-color 150ms var(--ease),color 150ms var(--ease);
+}
+.badge-doc .i{width:12px;height:12px}
+a.badge-doc:hover{border-color:var(--color-link);color:var(--color-link)}
+
+.with-note{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-sm);margin-bottom:var(--space-md)}
+.with-note>.main{min-width:0}
+.with-note>.main>*:last-child{margin-bottom:0}
+.note-diverge{
+  background:var(--color-note-bg);border-left:3px solid var(--color-note-border);color:var(--color-note-text);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 16px;font-size:var(--text-sm);line-height:1.55;
+}
+.note-diverge strong{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.note-diverge .i{width:16px;height:16px}
+.note-diverge p{margin:0 0 6px}
+.note-diverge p:last-child{margin:0}
+.note-diverge code{background:rgba(197,138,27,.14);color:var(--color-note-text)}
+
+.table-wrap{overflow-x:auto;margin-bottom:var(--space-md);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+table{border-collapse:collapse;width:100%;font-size:var(--text-sm)}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--color-border);vertical-align:top}
+th{background:var(--color-surface);color:var(--color-ink);font-weight:600}
+tr:last-child td{border-bottom:0}
+
+.flow{list-style:none;margin:0 0 var(--space-md);padding:0;display:grid;gap:0}
+.flow li{position:relative;padding:0 0 var(--space-md) 36px;margin:0}
+.flow li::before{
+  content:counter(flow);counter-increment:flow;position:absolute;left:0;top:0;width:24px;height:24px;border-radius:7px;
+  background:var(--gradient-brand);color:#fff;font:700 var(--text-xs)/24px var(--font-body);text-align:center;text-shadow:0 1px 1px rgba(0,59,87,.5)
+}
+.flow li::after{content:"";position:absolute;left:11px;top:28px;bottom:4px;width:2px;background:var(--color-border)}
+.flow li:last-child::after{display:none}
+.flow{counter-reset:flow}
+.flow .step{font-weight:600;color:var(--color-ink);display:block;margin-bottom:6px}
+
+/* ==========================================================
+   Blocos de código
+   ========================================================== */
+.code-block{background:var(--code-bg);border-radius:var(--radius-md);overflow:hidden;margin:0 0 var(--space-md);box-shadow:var(--shadow-sm)}
+.code-head{
+  display:flex;justify-content:space-between;align-items:center;gap:var(--space-sm);
+  background:var(--code-header-bg);color:var(--code-label);padding:6px 6px 6px 16px;
+  font:500 var(--text-xs)/1.2 var(--font-body);letter-spacing:.02em
+}
+.code-label{display:inline-flex;align-items:center;gap:8px}
+.code-label::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--color-sky)}
+.code-block.is-syntax .code-label::before{background:transparent;border:1.5px solid var(--color-sky)}
+.code-block pre{
+  margin:0;padding:14px 16px;overflow-x:auto;tab-size:4;
+  font:400 var(--text-code)/1.55 var(--font-mono);color:var(--code-fg);font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0;
+}
+.code-block pre:focus-visible{outline:2px solid var(--color-sky);outline-offset:-2px}
+.copy-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;min-width:96px;padding:4px 12px;
+  border:1px solid rgba(151,217,246,.35);border-radius:var(--radius-sm);background:transparent;color:var(--code-fg);
+  font:600 var(--text-xs)/1 var(--font-body);transition:background 150ms var(--ease),border-color 150ms var(--ease),color 150ms var(--ease);
+}
+.copy-btn .i{width:14px;height:14px}
+.copy-btn:hover{background:rgba(151,217,246,.14)}
+.copy-btn:focus-visible{outline:2px solid var(--color-sky);outline-offset:2px}
+.copy-btn.is-copied{background:var(--color-success);border-color:var(--color-success);color:#fff}
+.tok-kw{color:var(--syn-keyword);font-weight:600}
+.tok-fn{color:var(--syn-function)}
+.tok-str{color:var(--syn-string)}
+.tok-id{color:var(--code-fg)}
+.tok-num{color:var(--syn-number)}
+.tok-com{color:var(--syn-comment);font-style:italic}
+.tok-cmd{color:var(--syn-command);font-weight:600}
+.tok-opt{color:var(--syn-function)}
+.ph{
+  color:var(--syn-placeholder);background:var(--syn-placeholder-bg);border-bottom:1px dashed var(--color-sky);
+  border-radius:3px;padding:0 2px;font-style:italic
+}
+pre.code{white-space:pre} /* antes do JS */
+
+/* Expansível */
+details.expand{border:1px solid var(--color-border);border-radius:var(--radius-md);margin:0 0 var(--space-md);background:var(--color-surface)}
+details.expand>summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;
+  font-weight:600;font-size:var(--text-sm);color:var(--color-ink);border-radius:var(--radius-md);
+}
+details.expand>summary::-webkit-details-marker{display:none}
+details.expand>summary .i{transition:transform 150ms var(--ease);color:var(--color-link)}
+details.expand[open]>summary .i{transform:rotate(90deg)}
+details.expand>summary:hover{background:var(--color-sky-tint)}
+details.expand>.expand-body{padding:4px 14px 2px}
+details.expand>.expand-body>p{font-size:var(--text-sm)}
+
+/* Filtros */
+.filters{
+  position:sticky;top:var(--header-h);z-index:20;background:rgba(255,255,255,.97);
+  padding:var(--space-md) 0;margin-bottom:var(--space-lg);border-bottom:1px solid var(--color-border)
+}
+.filters-label{font-size:var(--text-sm);font-weight:600;color:var(--color-ink);margin:0 0 var(--space-sm)}
+.chips{display:flex;gap:var(--space-sm);overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.chip{
+  flex:none;min-height:36px;padding:6px 14px;border-radius:var(--radius-pill);border:1px solid var(--color-border);
+  background:var(--color-bg);color:var(--color-text);font-size:var(--text-sm);font-weight:500;
+  transition:background 150ms var(--ease),border-color 150ms var(--ease),color 150ms var(--ease);
+}
+.chip:hover{border-color:var(--color-link);color:var(--color-link)}
+.chip[aria-pressed="true"]{background:var(--color-link);border-color:var(--color-link);color:var(--color-on-ink)}
+
+.status{font-size:var(--text-sm);color:var(--color-text-muted);margin:0 0 var(--space-lg)}
+.status:empty{display:none}
+.empty{
+  border:1px dashed var(--color-border);border-radius:var(--radius-lg);padding:var(--space-xl) var(--space-lg);text-align:center;background:var(--color-surface);margin-bottom:var(--space-2xl)
+}
+.empty h3{font-size:var(--text-xl);margin-bottom:var(--space-sm)}
+.empty .suggestions{display:flex;flex-wrap:wrap;gap:var(--space-sm);justify-content:center;margin-top:var(--space-md)}
+
+.footer{border-top:1px solid var(--color-border);padding-top:var(--space-lg);font-size:var(--text-sm);color:var(--color-text-muted)}
+
+/* ==========================================================
+   Responsivo
+   ========================================================== */
+@media (max-width:767px){
+  .copy-btn{min-height:44px}
+  .brand-sub{display:none}
+  .kbd{display:none}
+}
+@media (max-width:479px){
+  .brand-text{display:none}
+}
+@media (min-width:768px){
+  main{padding-left:var(--space-xl);padding-right:var(--space-xl)}
+  .entry{padding:var(--space-lg)}
+  .part-switch{display:flex}
+  .hero{padding:var(--space-2xl) var(--space-xl)}
+}
+@media (min-width:1024px){
+  .menu-btn{display:none}
+  .topbar{padding:0 var(--space-lg)}
+  .sidebar{transform:none;box-shadow:none;width:var(--sidebar-w);z-index:10}
+  .backdrop{display:none}
+  main{margin-left:var(--sidebar-w)}
+}
+@media (min-width:1280px){
+  .wrap{max-width:1060px}
+  .with-note{grid-template-columns:minmax(0,1fr) 230px;gap:var(--space-md);align-items:start}
+  .with-note>.note-diverge{position:sticky;top:calc(var(--header-h) + 80px)}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Ícones SVG (traço no estilo Lucide) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+</svg>
+
+<a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="topbar">
+  <button class="menu-btn" type="button" id="menu-btn" aria-controls="sidebar" aria-expanded="false">
+    <svg class="i" aria-hidden="true"><use href="#i-menu"/></svg><span>Menu</span>
+  </button>
+  <a class="brand" href="#inicio" aria-label="SQLite: Fundamentos e Manual — início">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span>
+    <span class="brand-text"><span class="brand-name">SQLite</span><span class="brand-sub">Fundamentos e Manual</span></span>
+  </a>
+  <nav class="part-switch" aria-label="Partes da página">
+    <a href="#fundamentos" data-part="fundamentos">Fundamentos</a>
+    <a href="#manual" data-part="manual">Manual</a>
+  </nav>
+  <div class="search-wrap" role="search">
+    <label class="sr-only" for="search">Buscar conceitos e comandos</label>
+    <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+    <input class="search" id="search" type="search" placeholder="Buscar conceitos e comandos" autocomplete="off" spellcheck="false" aria-describedby="search-status">
+    <span class="kbd" id="search-kbd" aria-hidden="true">/</span>
+    <button class="search-clear" id="search-clear" type="button" aria-label="Limpar busca" hidden><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+  </div>
+</header>
+
+<aside class="sidebar" id="sidebar" aria-label="Navegação">
+  <nav aria-label="Seções da página">
+    <div class="nav-part">
+      <p class="nav-part-title">Parte 1 · Fundamentos</p>
+      <ul class="nav-list">
+        <li><a href="#f-introducao">Introdução</a></li>
+        <li><a href="#f-guia">Guia rápido: banco a partir de um schema</a></li>
+        <li><a href="#f-consultando">Aula 1 · Consultando</a></li>
+        <li><a href="#f-relacionando">Aula 2 · Relacionando</a></li>
+        <li><a href="#f-desenhando">Aula 3 · Desenhando</a></li>
+        <li><a href="#f-escrevendo">Inserir, excluir e atualizar</a></li>
+        <li><a href="#f-visualizacoes">Visualizações</a></li>
+        <li><a href="#f-otimizando">Índices, VACUUM e transações</a></li>
+      </ul>
+    </div>
+    <div class="nav-part">
+      <p class="nav-part-title">Parte 2 · Manual</p>
+      <ul class="nav-list">
+        <li><a href="#m-terminal">Terminal</a></li>
+        <li><a href="#m-ponto">Comandos de ponto (sqlite3)</a></li>
+        <li><a href="#m-consulta">Consultas</a></li>
+        <li><a href="#m-relacao">Relacionamentos e conjuntos</a></li>
+        <li><a href="#m-definicao">Estrutura das tabelas</a></li>
+        <li><a href="#m-manipulacao">Manipulação de dados</a></li>
+        <li><a href="#m-visoes">Visões, CTE e gatilhos</a></li>
+        <li><a href="#m-desempenho">Índices, transações e manutenção</a></li>
+      </ul>
+    </div>
+  </nav>
+</aside>
+<div class="backdrop" id="backdrop"></div>
+
+<main id="conteudo" tabindex="-1">
+<div class="wrap">
+
+<section class="hero" id="inicio" aria-labelledby="titulo">
+  <h1 id="titulo">SQLite: fundamentos e manual</h1>
+  <p class="lead">Referência em português dos conceitos de bancos de dados relacionais com SQLite e manual dos comandos do cliente <code>sqlite3</code> e das instruções SQL mais usadas. A Parte 1 segue a ordem das anotações do curso; a Parte 2 reúne os comandos por categoria, com sintaxe, finalidade e exemplos copiáveis.</p>
+  <ul class="legend">
+    <li><span class="ph-demo">nome_da_tabela</span><span>Marcador: troque pelo nome real ao adaptar o exemplo. O botão “Copiar” copia o comando sem prompt e sem saída.</span></li>
+    <li><span class="badge-doc">complemento da documentação oficial</span><span>Informação que não está nas anotações do curso e vem de sqlite.org.</span></li>
+    <li><span class="note-demo" aria-hidden="true"></span><span>Nota de divergência: o texto do curso é mantido e a diferença em relação à documentação oficial fica registrada ao lado.</span></li>
+    <li><span><code>/</code> <code>Esc</code></span><span>Atalhos: <code>/</code> abre a busca; <code>Esc</code> limpa a busca e fecha o menu.</span></li>
+  </ul>
+</section>
+
+<p class="status" id="search-status" role="status" aria-live="polite"></p>
+<div class="empty" id="empty" hidden>
+  <h3>Nada encontrado para essa busca</h3>
+  <p>Confira a grafia ou tente um termo mais curto. Algumas buscas comuns:</p>
+  <div class="suggestions">
+    <button class="chip" type="button" data-suggest="SELECT">SELECT</button>
+    <button class="chip" type="button" data-suggest="JOIN">JOIN</button>
+    <button class="chip" type="button" data-suggest=".import">.import</button>
+    <button class="chip" type="button" data-suggest="transação">transação</button>
+    <button class="chip" type="button" data-suggest="chave estrangeira">chave estrangeira</button>
+  </div>
+</div>
+
+<!-- =====================================================================
+     PARTE 1 — FUNDAMENTOS
+     ===================================================================== -->
+<div class="part" id="fundamentos" data-part="fundamentos">
+  <header class="part-head">
+    <span class="part-num" aria-hidden="true">1</span>
+    <div><h2>Fundamentos</h2><p>Os conceitos na ordem em que aparecem nas anotações do curso.</p></div>
+  </header>
+
+  <!-- ===== Introdução ===== -->
+  <section class="group" id="f-introducao" aria-labelledby="h-f-introducao">
+    <h2 class="group-title" id="h-f-introducao">Introdução</h2>
+    <p class="group-desc">Por que usar um banco de dados, quais programas existem e qual linguagem conversa com eles.</p>
+
+    <article class="entry" id="c-banco-x-planilha" data-keywords="planilha excel escala velocidade atualizacao">
+      <h3>Banco de dados × planilha</h3>
+      <p>Uma planilha resolve bem pequenos volumes de dados. O banco de dados passa a ser a melhor escolha quando três fatores pesam:</p>
+      <ul>
+        <li><strong>Escala:</strong> a quantidade de dados cresce muito além do que uma planilha comporta com conforto.</li>
+        <li><strong>Atualização frequente:</strong> os dados mudam o tempo todo e precisam continuar consistentes.</li>
+        <li><strong>Velocidade:</strong> as consultas precisam devolver respostas rapidamente, mesmo com muitos dados.</li>
+      </ul>
+    </article>
+
+    <article class="entry" id="c-o-que-e" data-keywords="definicao criar ler atualizar deletar crud">
+      <h3>O que é um banco de dados</h3>
+      <p>É um coletor de dados organizados que permite quatro operações básicas: <strong>criar</strong>, <strong>ler</strong>, <strong>atualizar</strong> e <strong>deletar</strong> dados.</p>
+    </article>
+
+    <article class="entry" id="c-softwares" data-keywords="sgbd mysql oracle postgresql sqlite programas">
+      <h3>Softwares de banco de dados</h3>
+      <p>Alguns dos programas mais conhecidos para gerenciar bancos de dados:</p>
+      <ul>
+        <li>MySQL</li>
+        <li>Oracle</li>
+        <li>PostgreSQL</li>
+        <li>SQLite</li>
+      </ul>
+      <p><a class="badge-doc" href="https://www.sqlite.org/about.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> O SQLite é uma biblioteca que funciona sem servidor separado e sem configuração; o banco de dados inteiro fica guardado em um único arquivo em disco.</p>
+    </article>
+
+    <article class="entry" id="c-sql" data-keywords="linguagem consulta estruturada structured query language">
+      <h3>SQL</h3>
+      <p><strong>SQL</strong> significa <em>Linguagem de Consulta Estruturada</em> (<em>Structured Query Language</em>). É a linguagem usada para interagir com os bancos de dados: consultar, inserir, alterar e excluir dados, além de definir a estrutura das tabelas.</p>
+    </article>
+
+    <article class="entry" id="c-terminal" data-keywords="abrir banco terminal sqlite3 prompt">
+      <h3>Abrir um banco no terminal</h3>
+      <p>No terminal, o programa <code>sqlite3</code> seguido do nome do arquivo abre o banco de dados. A partir daí, você digita comandos no prompt do SQLite.</p>
+      <pre class="code" data-kind="terminal">sqlite3 {{arquivo.db}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>O terminal passa a exibir o prompt <code>sqlite&gt;</code>, pronto para receber instruções SQL e comandos de ponto.</p>
+    </article>
+  </section>
+
+  <!-- ===== Guia rápido ===== -->
+  <section class="group" id="f-guia" aria-labelledby="h-f-guia">
+    <h2 class="group-title" id="h-f-guia">Guia rápido: criar um banco SQLite a partir de um schema</h2>
+    <p class="group-desc">Um roteiro de quatro passos para sair de uma pasta vazia e chegar a um banco com as tabelas definidas em um arquivo <code>.sql</code>.</p>
+
+    <article class="entry" id="c-guia-pasta" data-keywords="mkdir cd pasta diretorio projeto make directory">
+      <h3>1. Criar uma pasta para o projeto</h3>
+      <p><code>mkdir</code> vem de <em>make directory</em>: cria um diretório (pasta). Em seguida, <code>cd</code> entra nele.</p>
+      <pre class="code" data-kind="terminal">mkdir "{{nome_da_pasta}}"
+cd "{{nome_da_pasta}}"</pre>
+    </article>
+
+    <article class="entry" id="c-guia-schema" data-keywords="code vs code arquivo sql schema create table">
+      <h3>2. Criar o arquivo de schema (.sql)</h3>
+      <p>O comando <code>code</code> cria (ou abre) o arquivo no VS Code. Dentro dele, escreva as instruções SQL que definem o banco, como <code>CREATE TABLE</code>.</p>
+      <pre class="code" data-kind="terminal">code {{arquivo.sql}}</pre>
+    </article>
+
+    <article class="entry" id="c-guia-banco" data-keywords="sqlite3 criar banco vazio arquivo db">
+      <h3>3. Criar o banco de dados SQLite</h3>
+      <p>Se o arquivo ainda não existir, o <code>sqlite3</code> cria um banco SQLite vazio com esse nome.</p>
+      <pre class="code" data-kind="terminal">sqlite3 {{arquivo.db}}</pre>
+    </article>
+
+    <article class="entry" id="c-guia-read" data-keywords=".read carregar schema executar arquivo">
+      <h3>4. Carregar o schema no banco</h3>
+      <p>Depois de entrar no SQLite, aparece o prompt <code>sqlite&gt;</code>. Nele, o comando <code>.read</code> executa todas as instruções SQL contidas no arquivo.</p>
+      <pre class="code" data-kind="dot">.read {{arquivo.sql}}</pre>
+    </article>
+
+    <article class="entry" id="c-guia-fluxo" data-keywords="fluxo completo passo a passo">
+      <h3>Fluxo completo</h3>
+      <ol class="flow">
+        <li><span class="step">Criar a pasta</span><code>mkdir "nome_da_pasta"</code></li>
+        <li><span class="step">Entrar na pasta</span><code>cd "nome_da_pasta"</code></li>
+        <li><span class="step">Criar o schema</span><code>code arquivo.sql</code></li>
+        <li><span class="step">Escrever o SQL no arquivo .sql</span>Instruções como <code>CREATE TABLE</code>.</li>
+        <li><span class="step">Criar ou abrir o banco</span><code>sqlite3 arquivo.db</code></li>
+        <li><span class="step">Carregar o schema</span><code>.read arquivo.sql</code></li>
+      </ol>
+    </article>
+
+    <article class="entry" id="c-guia-regra" data-keywords="regra decorar resumo mkdir code sqlite3 read">
+      <h3>Regra para decorar</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Comando</th><th scope="col">O que faz</th></tr></thead>
+          <tbody>
+            <tr><td><code>mkdir</code></td><td>Cria a <strong>pasta</strong>.</td></tr>
+            <tr><td><code>code</code></td><td>Cria ou abre o <strong>arquivo .sql</strong>.</td></tr>
+            <tr><td><code>sqlite3</code></td><td>Cria ou abre o <strong>banco .db</strong>.</td></tr>
+            <tr><td><code>.read</code></td><td>Lê e executa o <strong>arquivo .sql</strong> dentro do banco.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <!-- ===== Aula 1 ===== -->
+  <section class="group" id="f-consultando" aria-labelledby="h-f-consultando">
+    <h2 class="group-title" id="h-f-consultando">Aula 1 · Consultando</h2>
+    <p class="group-desc">Como ler dados de uma tabela: escolher colunas, filtrar linhas, ordenar e resumir resultados.</p>
+
+    <article class="entry" id="c-select" data-keywords="select selecionar consultar colunas asterisco todas">
+      <h3>SELECT</h3>
+      <p>Seleciona dados de uma tabela. O asterisco (<code>*</code>) traz todas as colunas; para trazer só algumas, liste os nomes separados por vírgula.</p>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry" id="c-limit" data-keywords="limit limitar linhas quantidade primeiras">
+      <h3>LIMIT</h3>
+      <p>Limita a quantidade de linhas devolvidas pela consulta.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}" LIMIT {{numero_de_linhas}};</pre>
+    </article>
+
+    <article class="entry" id="c-where" data-keywords="where filtrar condicao igual diferente operadores">
+      <h3>WHERE e operadores de igualdade</h3>
+      <p><code>WHERE</code> filtra as linhas, mantendo apenas as que satisfazem a condição. Operadores de igualdade:</p>
+      <ul>
+        <li><code>=</code> igual a</li>
+        <li><code>!=</code> diferente de</li>
+        <li><code>&lt;&gt;</code> diferente de (forma alternativa)</li>
+      </ul>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}" WHERE "{{coluna_2}}" = {{valor}};</pre>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}" WHERE "{{coluna_2}}" != '{{texto}}';</pre>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}" WHERE "{{coluna_2}}" &lt;&gt; '{{texto}}';</pre>
+    </article>
+
+    <article class="entry" id="c-not" data-keywords="not negacao negar inverter condicao">
+      <h3>NOT</h3>
+      <p>Inverte uma condição: mantém as linhas em que a condição é falsa.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}" WHERE NOT "{{coluna_2}}" = '{{texto}}';</pre>
+    </article>
+
+    <article class="entry" id="c-and-or" data-keywords="and or parenteses combinar condicoes logica">
+      <h3>AND, OR e parênteses</h3>
+      <div class="with-note">
+        <div class="main">
+          <p><code>AND</code> exige que todas as condições sejam verdadeiras; <code>OR</code> exige que pelo menos uma seja. Os parênteses agrupam condições e definem a ordem de avaliação, como na matemática.</p>
+          <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_2}}" = {{valor_1}} OR "{{coluna_2}}" = {{valor_2}};</pre>
+          <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}"
+WHERE ("{{coluna_2}}" = {{valor_1}} OR "{{coluna_2}}" = {{valor_2}})
+AND "{{coluna_3}}" != '{{texto}}';</pre>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>Um dos exemplos das anotações escreve <code>= valor OR valor</code>, sem repetir a coluna. Pela documentação de expressões do SQLite, cada lado do <code>OR</code> é avaliado separadamente; um número sozinho diferente de zero conta como verdadeiro, então essa forma não filtra como se espera. Repita a coluna em cada comparação, como nos exemplos acima.</p>
+          <p><a href="https://www.sqlite.org/lang_expr.html" target="_blank" rel="noopener">sqlite.org/lang_expr.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-null" data-keywords="null nulo vazio is null is not null ausente">
+      <h3>NULL</h3>
+      <p><code>NULL</code> representa um valor que não existe: o dado não está no banco de dados. Para testar se um valor é nulo, use <code>IS NULL</code>; para o contrário, <code>IS NOT NULL</code>.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_2}}" IS NULL;</pre>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_2}}" IS NOT NULL;</pre>
+    </article>
+
+    <article class="entry" id="c-like" data-keywords="like palavras-chave curinga porcentagem sublinhado padrao texto aproximado">
+      <h3>LIKE: busca por padrões de texto</h3>
+      <p><code>LIKE</code> compara um texto com um padrão que pode conter curingas:</p>
+      <ul>
+        <li><code>%</code> substitui qualquer sequência de caracteres (inclusive nenhuma);</li>
+        <li><code>_</code> substitui exatamente um caractere, útil quando não se sabe uma letra ao certo.</li>
+      </ul>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{nome_da_tabela}}"
+WHERE "{{nome_da_coluna}}" LIKE '%{{texto}}%';</pre>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{nome_da_tabela}}"
+WHERE "{{nome_da_coluna}}" LIKE '{{texto}}%';</pre>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{nome_da_tabela}}"
+WHERE "{{nome_da_coluna}}" LIKE '{{texto}} %';</pre>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{nome_da_tabela}}"
+WHERE "{{nome_da_coluna}}" LIKE '{{inicio}}_{{fim}}';</pre>
+      <p>No primeiro bloco, o texto pode estar em qualquer posição; no segundo, no início; no terceiro, no início e seguido de espaço (uma palavra inteira); no quarto, o <code>_</code> aceita qualquer caractere naquela posição.</p>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_expr.html#like" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Por padrão, o <code>LIKE</code> do SQLite não diferencia maiúsculas de minúsculas para letras ASCII.</p>
+    </article>
+
+    <article class="entry" id="c-comparacao" data-keywords="maior menor maior igual menor igual intervalo comparacao">
+      <h3>Comparações: &gt;, &lt;, &gt;=, &lt;=</h3>
+      <div class="with-note">
+        <div class="main">
+          <p>Operadores de comparação para números, datas em texto e outros valores ordenáveis: maior que, menor que, maior ou igual, menor ou igual. Combine-os com <code>AND</code> para definir um intervalo.</p>
+          <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_2}}" &gt;= {{valor_1}} AND "{{coluna_2}}" &lt;= {{valor_2}};</pre>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>As anotações escrevem <code>&gt;= valor_1 AND &lt;= valor_2</code>, sem a coluna na segunda comparação. Na sintaxe de expressões do SQLite, cada operador precisa de dois operandos; a coluna deve ser repetida, como no exemplo.</p>
+          <p><a href="https://www.sqlite.org/lang_expr.html" target="_blank" rel="noopener">sqlite.org/lang_expr.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-between" data-keywords="between entre intervalo faixa">
+      <h3>BETWEEN</h3>
+      <p>Forma compacta de filtrar um intervalo de valores.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_2}}" BETWEEN {{valor_1}} AND {{valor_2}};</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_expr.html#between" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Os limites são inclusivos: <code>x BETWEEN y AND z</code> equivale a <code>x &gt;= y AND x &lt;= z</code>.</p>
+    </article>
+
+    <article class="entry" id="c-order-by" data-keywords="order by ordenar ordem crescente decrescente asc desc classificar">
+      <h3>ORDER BY, ASC e DESC</h3>
+      <p><code>ORDER BY</code> ordena o resultado por uma ou mais colunas. <code>ASC</code> indica ordem crescente e <code>DESC</code>, decrescente. Com várias colunas, a segunda desempata a primeira.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+ORDER BY "{{coluna_2}}" LIMIT {{numero_de_linhas}};</pre>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+ORDER BY "{{coluna_2}}" DESC LIMIT {{numero_de_linhas}};</pre>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}", "{{coluna_3}}" FROM "{{nome_da_tabela}}"
+ORDER BY "{{coluna_2}}" DESC, "{{coluna_3}}" DESC
+LIMIT {{numero_de_linhas}};</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_select.html#the_order_by_clause" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Sem <code>ASC</code> nem <code>DESC</code>, a ordem é crescente.</p>
+    </article>
+
+    <article class="entry" id="c-agregacao" data-keywords="count avg min max sum agregacao contar media minimo maximo soma funcoes">
+      <h3>Funções de agregação: COUNT, AVG, MIN, MAX, SUM</h3>
+      <p>Resumem muitas linhas em um único valor: contagem, média, mínimo, máximo e soma.</p>
+      <pre class="code" data-kind="sql">SELECT COUNT(*) FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT AVG("{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT MIN("{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT MAX("{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT SUM("{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry" id="c-round" data-keywords="round arredondar casas decimais">
+      <h3>ROUND</h3>
+      <p>Arredonda um número para a quantidade de casas decimais indicada. Costuma envolver uma agregação, como a média.</p>
+      <pre class="code" data-kind="sql">SELECT ROUND(AVG("{{nome_da_coluna}}"), {{casas_decimais}}) FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry" id="c-as" data-keywords="as alias apelido renomear coluna resultado">
+      <h3>AS</h3>
+      <p>Dá um apelido (alias) a uma coluna do resultado, deixando a saída mais legível.</p>
+      <pre class="code" data-kind="sql">SELECT ROUND(AVG("{{nome_da_coluna}}"), {{casas_decimais}}) AS "{{nome_do_alias}}"
+FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry" id="c-distinct" data-keywords="distinct distintos unicos sem repeticao duplicados">
+      <h3>DISTINCT</h3>
+      <p>Remove valores repetidos do resultado. Dentro de <code>COUNT</code>, conta quantos valores diferentes existem.</p>
+      <pre class="code" data-kind="sql">SELECT DISTINCT "{{nome_da_coluna}}" FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT COUNT(DISTINCT "{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry" id="c-filtro-agregado" data-keywords="combinar where round avg alias filtro media">
+      <h3>Combinando filtro, agregação e alias</h3>
+      <p>As cláusulas se somam: é possível filtrar com <code>WHERE</code>, calcular uma média arredondada e nomear o resultado com <code>AS</code> na mesma consulta.</p>
+      <pre class="code" data-kind="sql">SELECT ROUND(AVG("{{coluna_1}}"), {{casas_decimais}}) AS "{{nome_do_alias}}"
+FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_2}}" = '{{texto}}';</pre>
+    </article>
+  </section>
+
+  <!-- ===== Aula 2 ===== -->
+  <section class="group" id="f-relacionando" aria-labelledby="h-f-relacionando">
+    <h2 class="group-title" id="h-f-relacionando">Aula 2 · Relacionando</h2>
+    <p class="group-desc">Como consultar dados espalhados por várias tabelas relacionadas.</p>
+
+    <article class="entry" id="c-subconsulta" data-keywords="subconsulta aninhada subquery consulta dentro de consulta nested">
+      <h3>Subconsultas (consultas aninhadas)</h3>
+      <p>Uma consulta pode ficar dentro de outra, entre parênteses. A consulta interna roda primeiro e o resultado dela alimenta a externa. Assim é possível percorrer tabelas relacionadas, inclusive passando por uma tabela intermediária.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}" WHERE "{{coluna_chave}}" = (
+    SELECT "{{coluna_fk}}" FROM "{{outra_tabela}}"
+    WHERE "{{coluna_2}}" = '{{texto}}'
+);</pre>
+      <details class="expand">
+        <summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>Ver exemplo com três níveis</summary>
+        <div class="expand-body">
+          <p>Três tabelas: a interna localiza uma chave, a do meio a usa na tabela intermediária e a externa traz o dado final.</p>
+          <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{tabela_a}}" WHERE "{{coluna_chave}}" = (
+    SELECT "{{coluna_fk_a}}" FROM "{{tabela_de_juncao}}" WHERE "{{coluna_fk_b}}" = (
+        SELECT "{{coluna_chave}}" FROM "{{tabela_b}}"
+        WHERE "{{coluna_2}}" = '{{texto}}'
+    )
+);</pre>
+        </div>
+      </details>
+    </article>
+
+    <article class="entry" id="c-in" data-keywords="in lista varios valores subconsulta pertence">
+      <h3>IN</h3>
+      <p>Use <code>IN</code> quando a comparação envolve mais de um valor, por exemplo quando a subconsulta devolve várias linhas.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}" WHERE "{{coluna_chave}}" IN (
+    SELECT "{{coluna_fk}}" FROM "{{outra_tabela}}"
+    WHERE "{{coluna_2}}" = {{valor}}
+);</pre>
+    </article>
+
+    <article class="entry" id="c-join" data-keywords="join inner join on juntar tabelas notacao ponto tabela coluna">
+      <h3>INNER JOIN, ON e notação de ponto</h3>
+      <p><code>JOIN</code> (ou <code>INNER JOIN</code>) junta tabelas lado a lado. <code>ON</code> diz quais colunas devem casar, e a notação de ponto (<code>tabela.coluna</code>) indica de qual tabela vem cada coluna. As linhas sem correspondência entre as tabelas ficam de fora do resultado.</p>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+JOIN "{{tabela_b}}" ON "{{tabela_b}}"."{{coluna_chave}}" = "{{tabela_a}}"."{{coluna_chave}}";</pre>
+    </article>
+
+    <article class="entry" id="c-outer-join" data-keywords="left join right join full join outer externa">
+      <h3>LEFT JOIN, RIGHT JOIN e FULL JOIN</h3>
+      <p>As anotações listam essas três junções.</p>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_select.html#determination_of_input_data_from_clause_processing_" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Diferente do <code>INNER JOIN</code>, elas mantêm linhas sem correspondência e preenchem as colunas ausentes com <code>NULL</code>: <code>LEFT JOIN</code> preserva todas as linhas da tabela da esquerda, <code>RIGHT JOIN</code> todas as da direita e <code>FULL JOIN</code> as de ambas. <code>RIGHT</code> e <code>FULL</code> são aceitos a partir do SQLite 3.39.0.</p>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+LEFT JOIN "{{tabela_b}}" ON "{{tabela_b}}"."{{coluna_chave}}" = "{{tabela_a}}"."{{coluna_chave}}";</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+RIGHT JOIN "{{tabela_b}}" ON "{{tabela_b}}"."{{coluna_chave}}" = "{{tabela_a}}"."{{coluna_chave}}";</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+FULL JOIN "{{tabela_b}}" ON "{{tabela_b}}"."{{coluna_chave}}" = "{{tabela_a}}"."{{coluna_chave}}";</pre>
+    </article>
+
+    <article class="entry" id="c-natural-join" data-keywords="natural join automatico colunas mesmo nome">
+      <h3>NATURAL JOIN</h3>
+      <div class="with-note">
+        <div class="main">
+          <p>Junta as tabelas automaticamente, sem precisar de <code>ON</code>.</p>
+          <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+NATURAL JOIN "{{tabela_b}}";</pre>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>As anotações dizem que o <code>NATURAL JOIN</code> une “as tabelas iguais”. Pela documentação, ele usa como critério <strong>as colunas que têm o mesmo nome</strong> nas duas tabelas, como se houvesse um <code>USING</code> com todas elas.</p>
+          <p><a href="https://www.sqlite.org/lang_select.html" target="_blank" rel="noopener">sqlite.org/lang_select.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-union" data-keywords="union intersect except conjuntos uniao intersecao diferenca combinar resultados">
+      <h3>UNION, INTERSECT e EXCEPT</h3>
+      <p>Combinam o resultado de duas consultas que tenham o mesmo número de colunas. Um texto fixo com <code>AS</code> pode identificar de qual consulta veio cada linha.</p>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{tabela_a}}"
+UNION
+SELECT "{{nome_da_coluna}}" FROM "{{tabela_b}}";</pre>
+      <pre class="code" data-kind="sql">SELECT '{{texto_1}}' AS "{{nome_do_alias}}", "{{nome_da_coluna}}" FROM "{{tabela_a}}"
+UNION
+SELECT '{{texto_2}}' AS "{{nome_do_alias}}", "{{nome_da_coluna}}" FROM "{{tabela_b}}";</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_select.html#compound_select_statements" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> <code>UNION</code> junta as linhas das duas consultas sem repetições; <code>INTERSECT</code> devolve só as linhas presentes nas duas; <code>EXCEPT</code> devolve as linhas da primeira que não aparecem na segunda.</p>
+    </article>
+
+    <article class="entry" id="c-group-by" data-keywords="group by having agrupar grupos filtro de grupos">
+      <h3>GROUP BY e HAVING</h3>
+      <p><code>GROUP BY</code> reúne em grupos as linhas que têm o mesmo valor em uma coluna, para que uma agregação seja calculada por grupo. <code>HAVING</code> filtra os grupos pelo resultado da agregação.</p>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", ROUND(AVG("{{coluna_2}}"), {{casas_decimais}}) AS "{{nome_do_alias}}"
+FROM "{{nome_da_tabela}}"
+GROUP BY "{{coluna_1}}"
+HAVING "{{nome_do_alias}}" &gt; {{valor}}
+ORDER BY "{{nome_do_alias}}" DESC;</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_select.html#resultset" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> <code>WHERE</code> filtra linhas antes do agrupamento; <code>HAVING</code> é avaliado depois, sobre cada grupo.</p>
+    </article>
+  </section>
+
+  <!-- ===== Aula 3 ===== -->
+  <section class="group" id="f-desenhando" aria-labelledby="h-f-desenhando">
+    <h2 class="group-title" id="h-f-desenhando">Aula 3 · Desenhando</h2>
+    <p class="group-desc">Como projetar a estrutura do banco: tipos de dados, criação de tabelas, relacionamentos e restrições.</p>
+
+    <article class="entry" id="c-tipos" data-keywords="tipos de dados classes de armazenamento null integer real text blob">
+      <h3>Tipos de dados</h3>
+      <p>O SQLite trabalha com cinco tipos de dados:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Tipo</th><th scope="col">Guarda</th></tr></thead>
+          <tbody>
+            <tr><td><code>NULL</code></td><td>Ausência de valor.</td></tr>
+            <tr><td><code>INTEGER</code></td><td>Números inteiros.</td></tr>
+            <tr><td><code>REAL</code></td><td>Números com casas decimais (ponto flutuante).</td></tr>
+            <tr><td><code>TEXT</code></td><td>Texto.</td></tr>
+            <tr><td><code>BLOB</code></td><td>Dados binários guardados exatamente como foram fornecidos.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><a class="badge-doc" href="https://www.sqlite.org/datatype3.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> A documentação chama esses cinco tipos de <em>classes de armazenamento</em> e descreve o conteúdo de cada um como na tabela acima.</p>
+    </article>
+
+    <article class="entry" id="c-afinidades" data-keywords="afinidade afinidades tipo de coluna text numeric integer real blob">
+      <h3>Afinidades</h3>
+      <p>Cada coluna tem uma afinidade de tipo: <code>TEXT</code>, <code>NUMERIC</code>, <code>INTEGER</code>, <code>REAL</code> ou <code>BLOB</code>.</p>
+      <p><a class="badge-doc" href="https://www.sqlite.org/datatype3.html#type_affinity" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> A afinidade é o tipo <em>preferido</em> da coluna: o SQLite tenta converter os valores para ela ao armazená-los, mas qualquer coluna ainda pode guardar qualquer tipo de dado. A afinidade é deduzida do tipo declarado: se contém “INT”, é <code>INTEGER</code>; se contém “CHAR”, “CLOB” ou “TEXT”, é <code>TEXT</code>; se contém “BLOB” ou se nenhum tipo foi declarado, é <code>BLOB</code>; se contém “REAL”, “FLOA” ou “DOUB”, é <code>REAL</code>; nos demais casos, <code>NUMERIC</code>.</p>
+    </article>
+
+    <article class="entry" id="c-create-table" data-keywords="create table criar tabela colunas">
+      <h3>a) Criar tabela</h3>
+      <div class="with-note">
+        <div class="main">
+          <p>Abra (ou crie) o banco com <code>sqlite3</code> e use <code>CREATE TABLE</code> com o nome da tabela e a lista de colunas entre parênteses.</p>
+          <pre class="code" data-kind="terminal">sqlite3 {{arquivo.db}}</pre>
+          <pre class="code" data-kind="sql">CREATE TABLE "{{nome_da_tabela}}" (
+    "{{coluna_1}}",
+    "{{coluna_2}}"
+);</pre>
+          <p>Depois de criar as tabelas, <code>.schema</code> mostra o resultado.</p>
+          <p><a class="badge-doc" href="https://www.sqlite.org/datatype3.html#determination_of_column_affinity" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Uma coluna declarada sem tipo, como acima, recebe afinidade <code>BLOB</code>.</p>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>As anotações mostram o terminal perguntando se o arquivo deve ser criado (<code>[y/n]</code>). A documentação do <code>sqlite3</code> não prevê essa pergunta: se o arquivo não existe, um novo banco é criado automaticamente. A confirmação provavelmente vem do ambiente usado no curso.</p>
+          <p><a href="https://www.sqlite.org/cli.html" target="_blank" rel="noopener">sqlite.org/cli.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-visualizar" data-keywords="schema visualizar estrutura ver tabelas">
+      <h3>b) Visualizar a estrutura</h3>
+      <p>O comando de ponto <code>.schema</code> exibe as instruções <code>CREATE</code> de todas as tabelas do banco.</p>
+      <pre class="code" data-kind="dot">.schema</pre>
+    </article>
+
+    <article class="entry" id="c-relacionar" data-keywords="relacionar tabela de juncao associacao muitos para muitos chaves">
+      <h3>c) Relacionar tabelas</h3>
+      <p>Para relacionar duas tabelas, crie uma terceira cujas colunas guardam as chaves de cada uma. Cada linha dessa tabela de junção liga uma linha de uma tabela a uma linha da outra.</p>
+      <pre class="code" data-kind="sql">CREATE TABLE "{{tabela_de_juncao}}" (
+    "{{coluna_fk_a}}",
+    "{{coluna_fk_b}}"
+);</pre>
+    </article>
+
+    <article class="entry" id="c-drop-table" data-keywords="drop table excluir tabela apagar remover">
+      <h3>d) Excluir tabela</h3>
+      <p><code>DROP TABLE</code> remove a tabela e todos os dados dela.</p>
+      <pre class="code" data-kind="sql">DROP TABLE "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry" id="c-arquivo-sql" data-keywords="arquivo sql schema tipos integer text code">
+      <h3>e) Criar o arquivo .sql com tipos</h3>
+      <p>Em vez de digitar no prompt, escreva o schema em um arquivo (<code>code arquivo.sql</code>) e declare o tipo de cada coluna.</p>
+      <pre class="code" data-kind="terminal">code {{arquivo.sql}}</pre>
+      <pre class="code" data-kind="sql">CREATE TABLE "{{nome_da_tabela}}" (
+    "{{coluna_1}}" INTEGER,
+    "{{coluna_2}}" TEXT
+);</pre>
+      <details class="expand">
+        <summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>Ver schema completo com três tabelas</summary>
+        <div class="expand-body">
+          <pre class="code" data-kind="sql">CREATE TABLE "{{tabela_a}}" (
+    "{{coluna_chave}}" INTEGER,
+    "{{coluna_1}}" TEXT
+);
+
+CREATE TABLE "{{tabela_b}}" (
+    "{{coluna_chave}}" INTEGER,
+    "{{coluna_1}}" TEXT,
+    "{{coluna_2}}" TEXT
+);
+
+CREATE TABLE "{{tabela_de_juncao}}" (
+    "{{coluna_fk_a}}" INTEGER,
+    "{{coluna_fk_b}}" INTEGER
+);</pre>
+        </div>
+      </details>
+    </article>
+
+    <article class="entry" id="c-ler-sql" data-keywords="read ler arquivo sql executar schema">
+      <h3>f) Ler o arquivo .sql</h3>
+      <p>Abra o banco e execute o arquivo com <code>.read</code>.</p>
+      <pre class="code" data-kind="terminal">sqlite3 {{arquivo.db}}</pre>
+      <pre class="code" data-kind="dot">.read {{arquivo.sql}}</pre>
+    </article>
+
+    <article class="entry" id="c-restricao-tabela" data-keywords="restricao de tabela primary key foreign key chave primaria chave estrangeira references">
+      <h3>g) Restrições de tabela: PRIMARY KEY e FOREIGN KEY</h3>
+      <p>A <strong>chave primária</strong> (<code>PRIMARY KEY</code>) identifica cada linha de forma única. A <strong>chave estrangeira</strong> (<code>FOREIGN KEY</code>) aponta, com <code>REFERENCES</code>, para a chave primária de outra tabela, criando o relacionamento.</p>
+      <pre class="code" data-kind="sql">CREATE TABLE "{{nome_da_tabela}}" (
+    "{{coluna_chave}}" INTEGER,
+    "{{coluna_1}}" TEXT,
+    PRIMARY KEY ("{{coluna_chave}}")
+);</pre>
+      <details class="expand">
+        <summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>Ver tabela de junção com duas chaves estrangeiras</summary>
+        <div class="expand-body">
+          <pre class="code" data-kind="sql">CREATE TABLE "{{tabela_de_juncao}}" (
+    "{{coluna_fk_a}}" INTEGER,
+    "{{coluna_fk_b}}" INTEGER,
+    FOREIGN KEY ("{{coluna_fk_a}}") REFERENCES "{{tabela_a}}" ("{{coluna_chave}}"),
+    FOREIGN KEY ("{{coluna_fk_b}}") REFERENCES "{{tabela_b}}" ("{{coluna_chave}}")
+);</pre>
+        </div>
+      </details>
+    </article>
+
+    <article class="entry" id="c-restricao-coluna" data-keywords="restricao de coluna not null unique check default valor padrao">
+      <h3>h) Restrições de coluna: NOT NULL, UNIQUE, CHECK e DEFAULT</h3>
+      <div class="with-note">
+        <div class="main">
+          <p>Restrições escritas logo após o tipo da coluna. Segundo as anotações, não se aplicam às colunas que contêm chaves primária e estrangeira.</p>
+          <ul>
+            <li><code>NOT NULL</code>: impede que a coluna receba valores nulos.</li>
+            <li><code>UNIQUE</code>: proíbe valores duplicados na mesma coluna.</li>
+            <li><code>CHECK</code>: valida uma condição antes de permitir a inserção ou a atualização.</li>
+            <li><code>DEFAULT</code>: define um valor padrão automático caso nenhum valor seja inserido.</li>
+          </ul>
+          <pre class="code" data-kind="sql">"{{nome_da_coluna}}" NUMERIC NOT NULL CHECK ("{{nome_da_coluna}}" != {{valor}}),</pre>
+          <pre class="code" data-kind="sql">"{{nome_da_coluna}}" TEXT NOT NULL CHECK ("{{nome_da_coluna}}" IN ('{{texto_1}}', '{{texto_2}}')),</pre>
+          <pre class="code" data-kind="sql">"{{nome_da_coluna}}" NUMERIC NOT NULL DEFAULT CURRENT_TIMESTAMP</pre>
+          <pre class="code" data-kind="sql">"{{nome_da_coluna}}" TEXT UNIQUE</pre>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>A documentação registra que, por compatibilidade com versões antigas, <code>PRIMARY KEY</code> <strong>não</strong> implica <code>NOT NULL</code> no SQLite, exceto em colunas <code>INTEGER PRIMARY KEY</code> e em tabelas <code>WITHOUT ROWID</code>. Em chaves primárias de outros tipos, declarar <code>NOT NULL</code> pode ser necessário.</p>
+          <p><a href="https://www.sqlite.org/lang_createtable.html#the_primary_key" target="_blank" rel="noopener">sqlite.org/lang_createtable.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-alter-table" data-keywords="alter table alterar tabela renomear adicionar remover coluna rename add drop column">
+      <h3>10) Alterando tabelas</h3>
+      <p><code>ALTER TABLE</code> modifica uma tabela existente: renomeia a tabela, adiciona, renomeia ou remove colunas.</p>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" RENAME TO "{{novo_nome}}";</pre>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" ADD COLUMN "{{nome_da_coluna}}" TEXT;</pre>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" RENAME COLUMN "{{nome_da_coluna}}" TO "{{novo_nome}}";</pre>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" DROP COLUMN "{{nome_da_coluna}}";</pre>
+    </article>
+  </section>
+
+  <!-- ===== Escrevendo ===== -->
+  <section class="group" id="f-escrevendo" aria-labelledby="h-f-escrevendo">
+    <h2 class="group-title" id="h-f-escrevendo">Inserir, excluir e atualizar</h2>
+    <p class="group-desc">Itens 11 a 13 das anotações: como gravar, apagar e modificar dados, incluindo importação de CSV, gatilhos e exclusão lógica.</p>
+
+    <article class="entry" id="c-insert" data-keywords="insert into values inserir dados linhas adicionar">
+      <h3>11. INSERT</h3>
+      <p><code>INSERT INTO</code> grava novas linhas. Liste as colunas e, em <code>VALUES</code>, os valores na mesma ordem. Várias linhas podem ser inseridas de uma vez, separadas por vírgula.</p>
+      <pre class="code" data-kind="sql">INSERT INTO "{{nome_da_tabela}}" ("{{coluna_1}}", "{{coluna_2}}", "{{coluna_3}}")
+VALUES ('{{texto}}', NULL, {{valor}});</pre>
+      <pre class="code" data-kind="sql">INSERT INTO "{{nome_da_tabela}}" ("{{coluna_1}}", "{{coluna_2}}", "{{coluna_3}}")
+VALUES
+('{{texto_1}}', 1, NULL),
+('{{texto_2}}', 2, '{{texto}}');</pre>
+    </article>
+
+    <article class="entry" id="c-import-csv" data-keywords="import csv importar arquivo planilha skip tabela temporaria">
+      <h3>Importar CSV</h3>
+      <p>O comando de ponto <code>.import</code> carrega um arquivo CSV em uma tabela. Com <code>--skip 1</code>, a primeira linha (o cabeçalho) é ignorada.</p>
+      <pre class="code" data-kind="dot">.import --csv --skip 1 {{arquivo.csv}} {{nome_da_tabela}}</pre>
+      <p>Outra forma: importar para uma tabela temporária, copiar só as colunas desejadas com <code>INSERT INTO … SELECT</code> e depois excluir a temporária.</p>
+      <pre class="code" data-kind="dot">.import --csv {{arquivo.csv}} {{tabela_temporaria}}</pre>
+      <pre class="code" data-kind="sql">INSERT INTO "{{nome_da_tabela}}" ("{{coluna_1}}", "{{coluna_2}}", "{{coluna_3}}")
+SELECT "{{coluna_1}}", "{{coluna_2}}", "{{coluna_3}}" FROM "{{tabela_temporaria}}";</pre>
+      <pre class="code" data-kind="sql">DROP TABLE "{{tabela_temporaria}}";</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/cli.html#importing_files_as_csv_or_other_formats" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Se a tabela de destino ainda não existe, o <code>.import</code> a cria e usa a primeira linha do CSV como nomes das colunas; por isso a segunda forma dispensa <code>--skip</code>.</p>
+    </article>
+
+    <article class="entry" id="c-delete" data-keywords="delete excluir apagar linhas remover dados">
+      <h3>12. DELETE</h3>
+      <p><code>DELETE FROM</code> exclui as linhas que atendem à condição do <code>WHERE</code>. A condição pode usar uma subconsulta.</p>
+      <pre class="code" data-kind="sql">DELETE FROM "{{nome_da_tabela}}"
+WHERE "{{nome_da_coluna}}" = '{{texto}}';</pre>
+      <pre class="code" data-kind="sql">DELETE FROM "{{tabela_de_juncao}}"
+WHERE "{{coluna_fk_a}}" = (
+    SELECT "{{coluna_chave}}"
+    FROM "{{tabela_a}}"
+    WHERE "{{coluna_1}}" = '{{texto}}'
+);</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_delete.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Sem <code>WHERE</code>, todas as linhas da tabela são excluídas.</p>
+    </article>
+
+    <article class="entry" id="c-on-delete" data-keywords="on delete cascade restrict no action set null set default chave estrangeira exclusao em cascata">
+      <h3>ON DELETE: o que fazer quando a chave referenciada é excluída</h3>
+      <div class="with-note">
+        <div class="main">
+          <p>É possível definir a ação tomada quando um ID referenciado por uma chave estrangeira é excluído, com <code>ON DELETE</code> seguido da ação:</p>
+          <ul>
+            <li><code>ON DELETE RESTRICT</code>: impede a exclusão de IDs caso ela viole a restrição de chave estrangeira.</li>
+            <li><code>ON DELETE NO ACTION</code>: permite a exclusão de IDs referenciados sem realizar nenhuma ação adicional.</li>
+            <li><code>ON DELETE SET NULL</code>: permite a exclusão e define como <code>NULL</code> as referências da chave estrangeira.</li>
+            <li><code>ON DELETE SET DEFAULT</code>: igual ao anterior, mas usa um valor padrão em vez de <code>NULL</code>.</li>
+            <li><code>ON DELETE CASCADE</code>: permite a exclusão e apaga, em cascata, as linhas que fazem referência à chave excluída.</li>
+          </ul>
+          <pre class="code" data-kind="sql">FOREIGN KEY ("{{coluna_fk_a}}") REFERENCES "{{tabela_a}}" ("{{coluna_chave}}") ON DELETE CASCADE</pre>
+          <p>Com <code>CASCADE</code> nas chaves estrangeiras da tabela de junção, um <code>DELETE</code> na tabela referenciada não gera erro e propaga a exclusão para as linhas ligadas a ela.</p>
+          <pre class="code" data-kind="sql">DELETE FROM "{{tabela_a}}"
+WHERE "{{coluna_1}}" = '{{texto}}';</pre>
+          <p><a class="badge-doc" href="https://www.sqlite.org/foreignkeys.html#fk_enable" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> As restrições de chave estrangeira vêm <strong>desativadas</strong> por padrão e precisam ser ligadas em cada conexão:</p>
+          <pre class="code" data-kind="sql">PRAGMA foreign_keys = ON;</pre>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>Sobre <code>NO ACTION</code>, a documentação explica que nenhuma ação <em>especial</em> é executada, mas a restrição continua valendo: com as chaves estrangeiras ativadas, a exclusão que deixar referências órfãs falha. A diferença para <code>RESTRICT</code> é o momento da verificação (<code>RESTRICT</code> checa na hora; <code>NO ACTION</code>, ao fim da instrução).</p>
+          <p><a href="https://www.sqlite.org/foreignkeys.html#fk_actions" target="_blank" rel="noopener">sqlite.org/foreignkeys.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-update" data-keywords="update set atualizar alterar modificar dados subconsulta">
+      <h3>13. UPDATE</h3>
+      <p><code>UPDATE … SET</code> altera valores de linhas existentes; o <code>WHERE</code> escolhe quais linhas. Tanto o novo valor quanto a condição podem vir de subconsultas.</p>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = {{valor}}
+WHERE {{condicao}};</pre>
+      <details class="expand">
+        <summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>Ver exemplo com subconsultas no SET e no WHERE</summary>
+        <div class="expand-body">
+          <pre class="code" data-kind="sql">UPDATE "{{tabela_de_juncao}}"
+SET "{{coluna_fk_a}}" = (
+    SELECT "{{coluna_chave}}"
+    FROM "{{tabela_a}}"
+    WHERE "{{coluna_1}}" = '{{texto_1}}'
+)
+WHERE "{{coluna_fk_b}}" = (
+    SELECT "{{coluna_chave}}"
+    FROM "{{tabela_b}}"
+    WHERE "{{coluna_1}}" = '{{texto_2}}'
+);</pre>
+        </div>
+      </details>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_update.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Sem <code>WHERE</code>, todas as linhas da tabela são alteradas.</p>
+    </article>
+
+    <article class="entry" id="c-trim-upper" data-keywords="trim upper lower like limpar espacos maiusculas minusculas padronizar texto">
+      <h3>TRIM, UPPER, LOWER e LIKE na limpeza de dados</h3>
+      <p>Funções de texto ajudam a padronizar dados com <code>UPDATE</code>:</p>
+      <ul>
+        <li><code>trim</code>: remove espaços do início e do fim;</li>
+        <li><code>upper</code> / <code>lower</code>: deixa tudo em maiúsculas / minúsculas;</li>
+        <li><code>LIKE</code>: encontra valores aproximados para corrigi-los de uma vez.</li>
+      </ul>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = trim("{{nome_da_coluna}}");</pre>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = upper("{{nome_da_coluna}}");</pre>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = lower("{{nome_da_coluna}}");</pre>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = '{{texto}}'
+WHERE "{{nome_da_coluna}}" LIKE '{{padrao}}%';</pre>
+    </article>
+
+    <article class="entry" id="c-triggers" data-keywords="trigger gatilho create trigger before after insert update delete old new">
+      <h3>TRIGGERS (gatilhos)</h3>
+      <p>Um gatilho executa instruções automaticamente quando ocorre um <code>INSERT</code>, <code>UPDATE</code> ou <code>DELETE</code> em uma tabela, antes (<code>BEFORE</code>) ou depois (<code>AFTER</code>) do evento. O corpo fica entre <code>BEGIN</code> e <code>END</code>. <code>OLD</code> dá acesso aos valores da linha antes da mudança, e <code>NEW</code>, aos valores novos.</p>
+      <pre class="code" data-kind="sql">CREATE TRIGGER "{{nome_do_gatilho}}"
+BEFORE DELETE ON "{{nome_da_tabela}}"
+BEGIN
+    INSERT INTO "{{tabela_de_registro}}" ("{{coluna_1}}", "{{coluna_2}}")
+    VALUES (OLD."{{coluna_1}}", '{{texto}}');
+END;</pre>
+      <pre class="code" data-kind="sql">CREATE TRIGGER "{{nome_do_gatilho}}"
+AFTER INSERT ON "{{nome_da_tabela}}"
+BEGIN
+    INSERT INTO "{{tabela_de_registro}}" ("{{coluna_1}}", "{{coluna_2}}")
+    VALUES (NEW."{{coluna_1}}", '{{texto}}');
+END;</pre>
+      <p>Os eventos possíveis são <code>BEFORE</code>/<code>AFTER</code> combinados com <code>DELETE</code>, <code>UPDATE</code> ou <code>INSERT</code>.</p>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_createtrigger.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> <code>NEW</code> existe em gatilhos de <code>INSERT</code> e <code>UPDATE</code>; <code>OLD</code>, em gatilhos de <code>UPDATE</code> e <code>DELETE</code>.</p>
+    </article>
+
+    <article class="entry" id="c-soft-delete" data-keywords="soft deletion exclusao logica marcar como excluido flag">
+      <h3>Soft deletions (exclusão lógica)</h3>
+      <p>Em vez de apagar a linha, marca-se a linha como excluída em uma coluna própria. Os dados continuam no banco e as consultas ignoram as linhas marcadas.</p>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}"
+ADD COLUMN "{{coluna_de_exclusao}}" INTEGER DEFAULT 0;</pre>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}"
+SET "{{coluna_de_exclusao}}" = 1
+WHERE {{condicao}};</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_de_exclusao}}" != 1;</pre>
+    </article>
+  </section>
+
+  <!-- ===== Visualizações ===== -->
+  <section class="group" id="f-visualizacoes" aria-labelledby="h-f-visualizacoes">
+    <h2 class="group-title" id="h-f-visualizacoes">Visualizações</h2>
+    <p class="group-desc">Itens 14 a 18 das anotações: consultas salvas como visões (views), CTEs e usos práticos de visões.</p>
+
+    <article class="entry" id="c-view" data-keywords="view visao visualizacao create view temporary view temporaria consulta salva">
+      <h3>14. CREATE VIEW e CREATE TEMPORARY VIEW</h3>
+      <p>Uma visão é uma consulta salva com um nome, que depois pode ser usada como se fosse uma tabela. O caminho é: 1) escrever a consulta; 2) colocá-la depois de <code>CREATE VIEW … AS</code>.</p>
+      <pre class="code" data-kind="sql">CREATE VIEW "{{nome_da_visao}}" AS
+SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">CREATE TEMPORARY VIEW "{{nome_da_visao}}" AS
+SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}";</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_createview.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> A visão temporária fica no banco temporário da conexão e deixa de existir quando a conexão é fechada. Visões são somente leitura no SQLite: para inserir, alterar ou excluir “através” delas, usam-se gatilhos <code>INSTEAD OF</code> (item 18).</p>
+    </article>
+
+    <article class="entry" id="c-cte" data-keywords="cte common table expression with expressao de tabela comum">
+      <h3>15. CTE (Common Table Expression): WITH</h3>
+      <p>A cláusula <code>WITH</code> define, antes da consulta principal, uma ou mais consultas nomeadas que podem ser usadas como tabelas.</p>
+      <pre class="code" data-kind="sql">WITH "{{nome_da_cte}}" AS (
+    SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+)
+SELECT "{{coluna_1}}" FROM "{{nome_da_cte}}";</pre>
+      <pre class="code" data-kind="sql">WITH "{{cte_1}}" AS (
+    SELECT "{{coluna_1}}" FROM "{{tabela_a}}"
+), "{{cte_2}}" AS (
+    SELECT "{{coluna_1}}" FROM "{{tabela_b}}"
+)
+SELECT * FROM "{{cte_1}}" JOIN "{{cte_2}}" USING ("{{coluna_1}}");</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_with.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Uma CTE funciona como uma visão temporária que existe só durante uma única instrução SQL.</p>
+    </article>
+
+    <article class="entry" id="c-particionamento" data-keywords="particionamento particionar dividir visao por valor">
+      <h3>16. Particionamento</h3>
+      <p>Visões podem dividir uma tabela grande em recortes, um por valor de uma coluna.</p>
+      <pre class="code" data-kind="sql">CREATE VIEW "{{nome_da_visao}}" AS
+SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_3}}" = {{valor}};</pre>
+    </article>
+
+    <article class="entry" id="c-securing" data-keywords="securing seguranca anonimizar anonimo esconder dados sensiveis">
+      <h3>17. Segurança: anonimizar dados com uma visão</h3>
+      <p>Uma visão pode expor só as colunas necessárias e trocar uma coluna sensível por um texto fixo, de modo que quem consulta a visão não vê o dado original.</p>
+      <pre class="code" data-kind="sql">CREATE VIEW "{{nome_da_visao}}" AS
+SELECT "{{coluna_1}}", "{{coluna_2}}", '{{texto}}' AS "{{coluna_sensivel}}"
+FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry" id="c-soft-delete-view" data-keywords="soft deletion visao instead of trigger gatilho for each row when exclusao logica">
+      <h3>18. Soft deletions em visões: gatilhos INSTEAD OF</h3>
+      <p>Combina exclusão lógica, visão e gatilhos: a visão mostra só as linhas não marcadas, e gatilhos <code>INSTEAD OF</code> transformam um <code>DELETE</code> ou <code>INSERT</code> feito na visão em operações na tabela original. <code>FOR EACH ROW</code> executa o gatilho para cada linha afetada; <code>WHEN</code> define uma condição para que ele rode.</p>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}"
+ADD COLUMN "{{coluna_de_exclusao}}" INTEGER DEFAULT 0;</pre>
+      <pre class="code" data-kind="sql">CREATE VIEW "{{nome_da_visao}}" AS
+SELECT "{{coluna_chave}}", "{{coluna_1}}", "{{coluna_2}}"
+FROM "{{nome_da_tabela}}"
+WHERE "{{coluna_de_exclusao}}" = 0;</pre>
+      <details class="expand">
+        <summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>Gatilho que converte DELETE na visão em exclusão lógica</summary>
+        <div class="expand-body">
+          <pre class="code" data-kind="sql">CREATE TRIGGER "{{nome_do_gatilho}}"
+INSTEAD OF DELETE ON "{{nome_da_visao}}"
+FOR EACH ROW
+BEGIN
+    UPDATE "{{nome_da_tabela}}" SET "{{coluna_de_exclusao}}" = 1
+    WHERE "{{coluna_chave}}" = OLD."{{coluna_chave}}";
+END;</pre>
+          <p>Com o gatilho criado, uma exclusão feita na visão apenas marca a linha na tabela:</p>
+          <pre class="code" data-kind="sql">DELETE FROM "{{nome_da_visao}}"
+WHERE "{{coluna_1}}" = '{{texto}}';</pre>
+        </div>
+      </details>
+      <details class="expand">
+        <summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>Gatilho de INSERT quando a linha já existe (reativa)</summary>
+        <div class="expand-body">
+          <pre class="code" data-kind="sql">CREATE TRIGGER "{{nome_do_gatilho}}"
+INSTEAD OF INSERT ON "{{nome_da_visao}}"
+FOR EACH ROW
+WHEN NEW."{{coluna_2}}" IN (
+    SELECT "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+)
+BEGIN
+    UPDATE "{{nome_da_tabela}}"
+    SET "{{coluna_de_exclusao}}" = 0
+    WHERE "{{coluna_2}}" = NEW."{{coluna_2}}";
+END;</pre>
+        </div>
+      </details>
+      <details class="expand">
+        <summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>Gatilho de INSERT quando a linha é nova (insere)</summary>
+        <div class="expand-body">
+          <pre class="code" data-kind="sql">CREATE TRIGGER "{{nome_do_gatilho}}"
+INSTEAD OF INSERT ON "{{nome_da_visao}}"
+FOR EACH ROW
+WHEN NEW."{{coluna_2}}" NOT IN (
+    SELECT "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+)
+BEGIN
+    INSERT INTO "{{nome_da_tabela}}" ("{{coluna_1}}", "{{coluna_2}}")
+    VALUES (NEW."{{coluna_1}}", NEW."{{coluna_2}}");
+END;</pre>
+        </div>
+      </details>
+    </article>
+  </section>
+
+  <!-- ===== Otimizando ===== -->
+  <section class="group" id="f-otimizando" aria-labelledby="h-f-otimizando">
+    <h2 class="group-title" id="h-f-otimizando">Índices, VACUUM e transações</h2>
+    <p class="group-desc">Itens 19 a 21 das anotações: acelerar consultas, liberar espaço em disco e agrupar alterações com segurança.</p>
+
+    <article class="entry" id="c-index" data-keywords="index indice create index explain query plan indice parcial acelerar busca">
+      <h3>19. Índices</h3>
+      <div class="with-note">
+        <div class="main">
+          <p>Um índice organiza os valores de uma coluna para acelerar as buscas por ela.</p>
+          <pre class="code" data-kind="sql">CREATE INDEX "{{nome_do_indice}}" ON "{{nome_da_tabela}}" ("{{nome_da_coluna}}");</pre>
+          <p>Para verificar se a pesquisa ficou mais rápida, coloque <code>EXPLAIN QUERY PLAN</code> antes da consulta.</p>
+          <pre class="code" data-kind="sql">EXPLAIN QUERY PLAN
+SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" = '{{texto}}';</pre>
+          <p><a class="badge-doc" href="https://www.sqlite.org/eqp.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Na saída, <code>SCAN</code> indica leitura da tabela inteira; <code>SEARCH … USING INDEX</code> indica que um índice está sendo usado.</p>
+          <p><strong>Índice parcial:</strong> indexa só as linhas que atendem a uma condição.</p>
+          <pre class="code" data-kind="sql">CREATE INDEX "{{nome_do_indice}}" ON "{{nome_da_tabela}}" ("{{nome_da_coluna}}")
+WHERE {{condicao}};</pre>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>No exemplo de índice parcial das anotações, há um <code>;</code> antes do <code>WHERE</code>. Na sintaxe oficial, o <code>WHERE</code> faz parte da mesma instrução <code>CREATE INDEX</code>, e o ponto e vírgula vem só no final.</p>
+          <p><a href="https://www.sqlite.org/partialindex.html" target="_blank" rel="noopener">sqlite.org/partialindex.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-vacuum" data-keywords="vacuum liberar espaco tamanho do arquivo du compactar">
+      <h3>20. VACUUM</h3>
+      <div class="with-note">
+        <div class="main">
+          <p>Para encontrar o tamanho do arquivo do banco no terminal:</p>
+          <pre class="code" data-kind="terminal">du -b {{arquivo.db}}</pre>
+          <p>Depois de excluir dados, para realmente liberar o espaço excluído, use <code>VACUUM</code> no SQLite.</p>
+          <pre class="code" data-kind="sql">VACUUM;</pre>
+          <p><a class="badge-doc" href="https://www.sqlite.org/pragma.html#pragma_page_count" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Também dá para estimar o tamanho de dentro do SQLite: o arquivo tem <code>page_count × page_size</code> bytes.</p>
+          <pre class="code" data-kind="sql">PRAGMA page_count;</pre>
+          <pre class="code" data-kind="sql">PRAGMA page_size;</pre>
+        </div>
+        <aside class="note-diverge" role="note">
+          <strong><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Divergência com a documentação oficial</strong>
+          <p>As anotações descrevem o <code>VACUUM</code> como “limpar cache”. A documentação o define como a <strong>reconstrução do arquivo do banco</strong>, reorganizando-o para ocupar o mínimo de espaço em disco; não se trata de cache.</p>
+          <p><a href="https://www.sqlite.org/lang_vacuum.html" target="_blank" rel="noopener">sqlite.org/lang_vacuum.html</a></p>
+        </aside>
+      </div>
+    </article>
+
+    <article class="entry" id="c-transacoes" data-keywords="transacao transacoes begin transaction commit rollback exclusive atomico desfazer confirmar">
+      <h3>21. Transações: BEGIN TRANSACTION</h3>
+      <p>Uma transação agrupa várias instruções para que sejam aplicadas juntas. <code>COMMIT</code> confirma as alterações; <code>ROLLBACK</code> desfaz tudo o que foi feito desde o <code>BEGIN</code>, por exemplo quando uma das instruções provoca erro de restrição.</p>
+      <p><strong>A) COMMIT</strong></p>
+      <pre class="code" data-kind="sql">BEGIN TRANSACTION;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = "{{nome_da_coluna}}" + {{valor}} WHERE "{{coluna_chave}}" = 2;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = "{{nome_da_coluna}}" - {{valor}} WHERE "{{coluna_chave}}" = 1;
+COMMIT;</pre>
+      <p><strong>B) ROLLBACK</strong></p>
+      <pre class="code" data-kind="sql">BEGIN TRANSACTION;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = "{{nome_da_coluna}}" + {{valor}} WHERE "{{coluna_chave}}" = 2;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = "{{nome_da_coluna}}" - {{valor}} WHERE "{{coluna_chave}}" = 1; -- provoca erro de restrição
+ROLLBACK;</pre>
+      <p><strong>C) EXCLUSIVE</strong></p>
+      <pre class="code" data-kind="sql">BEGIN EXCLUSIVE TRANSACTION;</pre>
+      <p><a class="badge-doc" href="https://www.sqlite.org/lang_transaction.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Fora do modo WAL, uma transação <code>EXCLUSIVE</code> impede que outras conexões leiam o banco enquanto ela está em andamento. Sem <code>BEGIN</code>, cada instrução já roda em uma transação própria, confirmada automaticamente ao terminar.</p>
+    </article>
+  </section>
+</div>
+
+<!-- =====================================================================
+     PARTE 2 — MANUAL
+     ===================================================================== -->
+<div class="part" id="manual" data-part="manual">
+  <header class="part-head">
+    <span class="part-num" aria-hidden="true">2</span>
+    <div><h2>Manual</h2><p>Comandos por categoria: sintaxe, finalidade, exemplo e resultado esperado.</p></div>
+  </header>
+  <p class="part-intro">Nos blocos “Sintaxe”, colchetes <code>[ ]</code> marcam partes opcionais e a barra <code>|</code> separa alternativas; eles não fazem parte do comando. Os blocos “Terminal” rodam no shell do sistema; os de comando de ponto e SQL rodam no prompt <code>sqlite&gt;</code>. Comandos de ponto não terminam com ponto e vírgula; instruções SQL, sim.</p>
+
+  <div class="filters" role="group" aria-labelledby="filters-label">
+    <p class="filters-label" id="filters-label">Filtrar comandos por categoria</p>
+    <div class="chips" id="chips">
+      <button class="chip" type="button" data-cat="todas" aria-pressed="true">Todas</button>
+      <button class="chip" type="button" data-cat="terminal" aria-pressed="false">Terminal</button>
+      <button class="chip" type="button" data-cat="ponto" aria-pressed="false">Comandos de ponto</button>
+      <button class="chip" type="button" data-cat="consulta" aria-pressed="false">Consultas</button>
+      <button class="chip" type="button" data-cat="relacao" aria-pressed="false">Relacionamentos</button>
+      <button class="chip" type="button" data-cat="definicao" aria-pressed="false">Estrutura</button>
+      <button class="chip" type="button" data-cat="manipulacao" aria-pressed="false">Manipulação</button>
+      <button class="chip" type="button" data-cat="visoes" aria-pressed="false">Visões e gatilhos</button>
+      <button class="chip" type="button" data-cat="desempenho" aria-pressed="false">Índices e transações</button>
+    </div>
+  </div>
+
+  <!-- ===== Terminal ===== -->
+  <section class="group" id="m-terminal" data-cat="terminal" aria-labelledby="h-m-terminal">
+    <h2 class="group-title" id="h-m-terminal">Terminal</h2>
+    <p class="group-desc">Comandos digitados no shell do sistema operacional, fora do SQLite.</p>
+
+    <article class="entry cmd" id="m-sqlite3" data-cat="terminal" data-keywords="abrir criar banco cliente">
+      <h3>sqlite3</h3>
+      <p><span class="field-label">Finalidade:</span> abre um banco de dados no cliente de linha de comando; se o arquivo não existir, cria um banco vazio.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">sqlite3 [{{arquivo.db}}]</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="terminal">sqlite3 {{arquivo.db}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Aparece o prompt <code>sqlite&gt;</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-mkdir" data-cat="terminal" data-keywords="criar pasta diretorio make directory">
+      <h3>mkdir</h3>
+      <p><span class="field-label">Finalidade:</span> cria uma pasta (<em>make directory</em>) para o projeto.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">mkdir "{{nome_da_pasta}}"</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="terminal">mkdir "{{nome_da_pasta}}"</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Nenhuma mensagem; a pasta passa a existir no diretório atual.</p>
+    </article>
+
+    <article class="entry cmd" id="m-cd" data-cat="terminal" data-keywords="entrar pasta mudar diretorio change directory">
+      <h3>cd</h3>
+      <p><span class="field-label">Finalidade:</span> entra em uma pasta, tornando-a o diretório atual.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">cd "{{nome_da_pasta}}"</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="terminal">cd "{{nome_da_pasta}}"</pre>
+    </article>
+
+    <article class="entry cmd" id="m-code" data-cat="terminal" data-keywords="vs code abrir criar arquivo editor schema">
+      <h3>code</h3>
+      <p><span class="field-label">Finalidade:</span> cria ou abre um arquivo no VS Code, por exemplo o arquivo <code>.sql</code> com o schema.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">code {{arquivo.sql}}</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="terminal">code {{arquivo.sql}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>O arquivo abre no editor, pronto para receber as instruções SQL.</p>
+    </article>
+
+    <article class="entry cmd" id="m-du" data-cat="terminal" data-keywords="tamanho arquivo disco bytes vacuum">
+      <h3>du -b</h3>
+      <p><span class="field-label">Finalidade:</span> mostra o tamanho do arquivo do banco, útil para comparar antes e depois de um <code>VACUUM</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">du -b {{arquivo.db}}</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="terminal">du -b {{arquivo.db}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Uma linha com o tamanho em bytes seguido do nome do arquivo.</p>
+    </article>
+  </section>
+
+  <!-- ===== Comandos de ponto ===== -->
+  <section class="group" id="m-ponto" data-cat="ponto" aria-labelledby="h-m-ponto">
+    <h2 class="group-title" id="h-m-ponto">Comandos de ponto (sqlite3)</h2>
+    <p class="group-desc">Comandos do próprio cliente <code>sqlite3</code>, digitados no prompt <code>sqlite&gt;</code>. Começam com ponto e não levam ponto e vírgula.</p>
+
+    <article class="entry cmd" id="m-help" data-cat="ponto" data-keywords="ajuda lista comandos">
+      <h3>.help <a class="badge-doc" href="https://www.sqlite.org/cli.html#special_commands_to_sqlite3_dot_commands_" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> lista os comandos de ponto disponíveis, com uma descrição curta de cada um.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.help [{{comando}}]</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="dot">.help</pre>
+      <pre class="code" data-kind="dot">.help {{comando}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>A lista de comandos ou a ajuda detalhada do comando indicado.</p>
+    </article>
+
+    <article class="entry cmd" id="m-open" data-cat="ponto" data-keywords="abrir outro banco trocar arquivo">
+      <h3>.open <a class="badge-doc" href="https://www.sqlite.org/cli.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> fecha o banco atual e abre outro arquivo, sem sair do <code>sqlite3</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.open {{arquivo.db}}</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="dot">.open {{arquivo.db}}</pre>
+    </article>
+
+    <article class="entry cmd" id="m-tables" data-cat="ponto" data-keywords="listar tabelas nomes">
+      <h3>.tables <a class="badge-doc" href="https://www.sqlite.org/cli.html#querying_the_database_schema" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> lista os nomes das tabelas (e visões) do banco; aceita um padrão no estilo do <code>LIKE</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.tables [{{padrao}}]</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="dot">.tables</pre>
+      <pre class="code" data-kind="dot">.tables {{padrao}}%</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Os nomes das tabelas, em colunas.</p>
+    </article>
+
+    <article class="entry cmd" id="m-schema" data-cat="ponto" data-keywords="estrutura create mostrar schema visualizar">
+      <h3>.schema</h3>
+      <p><span class="field-label">Finalidade:</span> mostra as instruções <code>CREATE</code> que definem as tabelas do banco.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.schema [{{nome_da_tabela}}]</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="dot">.schema</pre>
+      <pre class="code" data-kind="dot">.schema {{nome_da_tabela}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>O texto <code>CREATE TABLE …</code> de cada tabela (ou só da tabela indicada).</p>
+    </article>
+
+    <article class="entry cmd" id="m-read" data-cat="ponto" data-keywords="ler executar arquivo sql schema carregar">
+      <h3>.read</h3>
+      <p><span class="field-label">Finalidade:</span> lê e executa, em sequência, todas as instruções de um arquivo <code>.sql</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.read {{arquivo.sql}}</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="dot">.read {{arquivo.sql}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Sem mensagem quando tudo dá certo; as tabelas definidas no arquivo passam a aparecer em <code>.schema</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-import" data-cat="ponto" data-keywords="importar csv skip arquivo carregar dados">
+      <h3>.import</h3>
+      <p><span class="field-label">Finalidade:</span> importa os dados de um arquivo CSV para uma tabela. <code>--csv</code> indica o formato; <code>--skip 1</code> ignora a primeira linha (cabeçalho).</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.import --csv [--skip {{numero_de_linhas}}] {{arquivo.csv}} {{nome_da_tabela}}</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="dot">.import --csv --skip 1 {{arquivo.csv}} {{nome_da_tabela}}</pre>
+      <pre class="code" data-kind="dot">.import --csv {{arquivo.csv}} {{tabela_temporaria}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>As linhas do CSV passam a existir na tabela. <a class="badge-doc" href="https://www.sqlite.org/cli.html#importing_files_as_csv_or_other_formats" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Se a tabela não existia, ela é criada com a primeira linha do CSV como nomes de coluna.</p>
+    </article>
+
+    <article class="entry cmd" id="m-mode" data-cat="ponto" data-keywords="modo saida formato colunas box csv json tabela">
+      <h3>.mode <a class="badge-doc" href="https://www.sqlite.org/cli.html#changing_output_formats" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> muda o formato em que os resultados aparecem. Alguns modos: <code>box</code>, <code>column</code>, <code>table</code>, <code>markdown</code>, <code>csv</code>, <code>json</code>, <code>line</code> e <code>list</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.mode {{modo}}</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="dot">.mode box</pre>
+      <pre class="code" data-kind="dot">.mode csv</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>As consultas seguintes passam a ser exibidas no formato escolhido (em <code>box</code>, uma tabela desenhada com bordas).</p>
+    </article>
+
+    <article class="entry cmd" id="m-headers" data-cat="ponto" data-keywords="cabecalho nomes das colunas header">
+      <h3>.headers <a class="badge-doc" href="https://www.sqlite.org/cli.html#changing_output_formats" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> liga ou desliga a exibição dos nomes das colunas acima do resultado.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.headers on|off</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="dot">.headers on</pre>
+    </article>
+
+    <article class="entry cmd" id="m-timer" data-cat="ponto" data-keywords="tempo medir desempenho cronometro indice">
+      <h3>.timer <a class="badge-doc" href="https://www.sqlite.org/cli.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> mostra o tempo gasto em cada instrução SQL; útil para comparar uma consulta antes e depois de criar um índice.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.timer on|off</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="dot">.timer on</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Após cada consulta aparece uma linha <code>Run Time: real … user … sys …</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-output" data-cat="ponto" data-keywords="saida arquivo salvar resultado exportar">
+      <h3>.output <a class="badge-doc" href="https://www.sqlite.org/cli.html#writing_results_to_a_file" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> envia os resultados para um arquivo em vez da tela. Sem argumento, volta a exibir na tela.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.output [{{caminho_do_arquivo}}]</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="dot">.output {{caminho_do_arquivo}}</pre>
+      <pre class="code" data-kind="dot">.output</pre>
+    </article>
+
+    <article class="entry cmd" id="m-dump" data-cat="ponto" data-keywords="backup copia exportar sql texto">
+      <h3>.dump <a class="badge-doc" href="https://www.sqlite.org/cli.html#converting_an_entire_database_to_a_text_file" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> converte o banco (ou uma tabela) em texto SQL capaz de recriá-lo, útil como cópia de segurança.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">.dump [{{nome_da_tabela}}]</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="dot">.dump {{nome_da_tabela}}</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Instruções <code>CREATE TABLE</code> e <code>INSERT</code> entre <code>BEGIN TRANSACTION;</code> e <code>COMMIT;</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-quit" data-cat="ponto" data-keywords="sair fechar exit quit encerrar">
+      <h3>.quit / .exit <a class="badge-doc" href="https://www.sqlite.org/cli.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> encerra o <code>sqlite3</code> e volta ao terminal.</p>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="dot">.quit</pre>
+      <pre class="code" data-kind="dot">.exit</pre>
+    </article>
+  </section>
+
+  <!-- ===== Consultas ===== -->
+  <section class="group" id="m-consulta" data-cat="consulta" aria-labelledby="h-m-consulta">
+    <h2 class="group-title" id="h-m-consulta">Consultas</h2>
+    <p class="group-desc">Instruções e cláusulas para ler, filtrar, ordenar e resumir dados.</p>
+
+    <article class="entry cmd" id="m-select" data-cat="consulta" data-keywords="selecionar consultar colunas ler">
+      <h3>SELECT … FROM</h3>
+      <p><span class="field-label">Finalidade:</span> lê dados de uma tabela; <code>*</code> traz todas as colunas.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT * | {{coluna_1}}[, {{coluna_2}}, ...] FROM {{nome_da_tabela}};</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Uma linha de saída para cada linha da tabela, com as colunas pedidas.</p>
+    </article>
+
+    <article class="entry cmd" id="m-distinct" data-cat="consulta" data-keywords="distintos unicos sem repeticao">
+      <h3>DISTINCT</h3>
+      <p><span class="field-label">Finalidade:</span> elimina linhas repetidas do resultado.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT DISTINCT {{nome_da_coluna}} FROM {{nome_da_tabela}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT DISTINCT "{{nome_da_coluna}}" FROM "{{nome_da_tabela}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Cada valor diferente aparece uma única vez.</p>
+    </article>
+
+    <article class="entry cmd" id="m-as" data-cat="consulta" data-keywords="alias apelido renomear">
+      <h3>AS</h3>
+      <p><span class="field-label">Finalidade:</span> dá um nome (alias) a uma coluna ou expressão do resultado.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT {{expressao}} AS {{nome_do_alias}} FROM {{nome_da_tabela}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" AS "{{nome_do_alias}}" FROM "{{nome_da_tabela}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>O cabeçalho da coluna (com <code>.headers on</code>) mostra o alias.</p>
+    </article>
+
+    <article class="entry cmd" id="m-where" data-cat="consulta" data-keywords="filtrar condicao linhas">
+      <h3>WHERE</h3>
+      <p><span class="field-label">Finalidade:</span> filtra as linhas, mantendo só as que satisfazem a condição.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT ... FROM {{nome_da_tabela}} WHERE {{condicao}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" = '{{texto}}';</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Apenas as linhas em que a coluna é igual ao valor.</p>
+    </article>
+
+    <article class="entry cmd" id="m-operadores" data-cat="consulta" data-keywords="igual diferente maior menor comparacao operadores">
+      <h3>= != &lt;&gt; &gt; &lt; &gt;= &lt;=</h3>
+      <p><span class="field-label">Finalidade:</span> operadores de comparação usados em condições: igual, diferente (duas formas), maior, menor, maior ou igual, menor ou igual.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{nome_da_coluna}} = | != | &lt;&gt; | &gt; | &lt; | &gt;= | &lt;= {{valor}}</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" &lt;&gt; '{{texto}}';</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" &gt;= {{valor}};</pre>
+    </article>
+
+    <article class="entry cmd" id="m-logicos" data-cat="consulta" data-keywords="and or not parenteses logica combinar">
+      <h3>AND, OR, NOT</h3>
+      <p><span class="field-label">Finalidade:</span> combinam ou invertem condições; parênteses controlam a ordem de avaliação.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">WHERE [NOT] {{condicao_1}} AND | OR {{condicao_2}}</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}"
+WHERE ("{{coluna_1}}" = {{valor_1}} OR "{{coluna_1}}" = {{valor_2}})
+AND "{{coluna_2}}" != '{{texto}}';</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE NOT "{{nome_da_coluna}}" = '{{texto}}';</pre>
+    </article>
+
+    <article class="entry cmd" id="m-is-null" data-cat="consulta" data-keywords="nulo ausente vazio">
+      <h3>IS NULL / IS NOT NULL</h3>
+      <p><span class="field-label">Finalidade:</span> testa se um valor está ausente (nulo) ou presente.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">WHERE {{nome_da_coluna}} IS [NOT] NULL</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" IS NULL;</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" IS NOT NULL;</pre>
+    </article>
+
+    <article class="entry cmd" id="m-like" data-cat="consulta" data-keywords="padrao curinga porcentagem sublinhado texto parecido">
+      <h3>LIKE</h3>
+      <p><span class="field-label">Finalidade:</span> compara texto com um padrão; <code>%</code> vale qualquer sequência de caracteres e <code>_</code>, exatamente um caractere.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">WHERE {{nome_da_coluna}} LIKE '{{padrao}}'</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" LIKE '%{{texto}}%';</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" LIKE '{{inicio}}_{{fim}}';</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>As linhas cujo texto contém o trecho (primeiro exemplo) ou tem qualquer caractere na posição do <code>_</code> (segundo).</p>
+    </article>
+
+    <article class="entry cmd" id="m-between" data-cat="consulta" data-keywords="intervalo faixa entre">
+      <h3>BETWEEN … AND</h3>
+      <p><span class="field-label">Finalidade:</span> filtra valores dentro de um intervalo, com os limites incluídos.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">WHERE {{nome_da_coluna}} BETWEEN {{valor_1}} AND {{valor_2}}</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" BETWEEN {{valor_1}} AND {{valor_2}};</pre>
+    </article>
+
+    <article class="entry cmd" id="m-in" data-cat="consulta" data-keywords="lista varios valores pertence subconsulta">
+      <h3>IN</h3>
+      <p><span class="field-label">Finalidade:</span> verifica se um valor pertence a uma lista ou ao resultado de uma subconsulta.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">WHERE {{nome_da_coluna}} [NOT] IN ({{valor_1}}, {{valor_2}}, ... | {{subconsulta}})</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" IN ('{{texto_1}}', '{{texto_2}}');</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" WHERE "{{coluna_chave}}" IN (
+    SELECT "{{coluna_fk}}" FROM "{{outra_tabela}}" WHERE {{condicao}}
+);</pre>
+    </article>
+
+    <article class="entry cmd" id="m-order-by" data-cat="consulta" data-keywords="ordenar ordem crescente decrescente asc desc">
+      <h3>ORDER BY … ASC | DESC</h3>
+      <p><span class="field-label">Finalidade:</span> ordena o resultado por uma ou mais colunas, em ordem crescente (<code>ASC</code>, padrão) ou decrescente (<code>DESC</code>).</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT ... ORDER BY {{coluna_1}} [ASC | DESC][, {{coluna_2}} [ASC | DESC]];</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" ORDER BY "{{nome_da_coluna}}";</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" ORDER BY "{{coluna_1}}" DESC, "{{coluna_2}}" DESC;</pre>
+    </article>
+
+    <article class="entry cmd" id="m-limit" data-cat="consulta" data-keywords="limitar quantidade primeiras linhas offset pular">
+      <h3>LIMIT</h3>
+      <p><span class="field-label">Finalidade:</span> limita quantas linhas o resultado traz.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT ... LIMIT {{numero_de_linhas}} [OFFSET {{linhas_a_pular}}];</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" LIMIT {{numero_de_linhas}};</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{nome_da_tabela}}" LIMIT {{numero_de_linhas}} OFFSET {{linhas_a_pular}};</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>No máximo o número de linhas indicado. <a class="badge-doc" href="https://www.sqlite.org/lang_select.html#the_limit_clause" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> <code>OFFSET</code> pula as primeiras linhas antes de começar a contar.</p>
+    </article>
+
+    <article class="entry cmd" id="m-count" data-cat="consulta" data-keywords="contar quantidade linhas agregacao">
+      <h3>COUNT</h3>
+      <p><span class="field-label">Finalidade:</span> conta linhas ou valores.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">COUNT(* | [DISTINCT] {{nome_da_coluna}})</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT COUNT(*) FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT COUNT(DISTINCT "{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Um único número. <a class="badge-doc" href="https://www.sqlite.org/lang_aggfunc.html#count" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> <code>COUNT(*)</code> conta todas as linhas; <code>COUNT(coluna)</code> conta só os valores não nulos.</p>
+    </article>
+
+    <article class="entry cmd" id="m-avg" data-cat="consulta" data-keywords="media minimo maximo soma agregacao avg min max sum">
+      <h3>AVG, MIN, MAX, SUM</h3>
+      <p><span class="field-label">Finalidade:</span> calculam média, menor valor, maior valor e soma de uma coluna.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">AVG | MIN | MAX | SUM ({{nome_da_coluna}})</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT AVG("{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT MIN("{{nome_da_coluna}}"), MAX("{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">SELECT SUM("{{nome_da_coluna}}") FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-round" data-cat="consulta" data-keywords="arredondar casas decimais">
+      <h3>ROUND</h3>
+      <p><span class="field-label">Finalidade:</span> arredonda um número para a quantidade de casas decimais informada.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">ROUND({{numero}}[, {{casas_decimais}}])</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT ROUND(AVG("{{nome_da_coluna}}"), {{casas_decimais}}) AS "{{nome_do_alias}}" FROM "{{nome_da_tabela}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>A média com o número de casas pedido. <a class="badge-doc" href="https://www.sqlite.org/lang_corefunc.html#round" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Sem o segundo argumento, arredonda para 0 casas.</p>
+    </article>
+
+    <article class="entry cmd" id="m-group-by" data-cat="consulta" data-keywords="agrupar grupos agregacao por grupo">
+      <h3>GROUP BY</h3>
+      <p><span class="field-label">Finalidade:</span> agrupa as linhas com o mesmo valor em uma coluna para calcular agregações por grupo.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT {{coluna_1}}, {{agregacao}}({{coluna_2}}) FROM {{nome_da_tabela}} GROUP BY {{coluna_1}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", COUNT(*) FROM "{{nome_da_tabela}}" GROUP BY "{{coluna_1}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Uma linha por valor distinto de <code>coluna_1</code>, com a contagem de cada grupo.</p>
+    </article>
+
+    <article class="entry cmd" id="m-having" data-cat="consulta" data-keywords="filtrar grupos condicao agregada">
+      <h3>HAVING</h3>
+      <p><span class="field-label">Finalidade:</span> filtra os grupos formados pelo <code>GROUP BY</code> com base em uma condição sobre a agregação.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">... GROUP BY {{coluna_1}} HAVING {{condicao_sobre_agregacao}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}", ROUND(AVG("{{coluna_2}}"), {{casas_decimais}}) AS "{{nome_do_alias}}"
+FROM "{{nome_da_tabela}}"
+GROUP BY "{{coluna_1}}"
+HAVING "{{nome_do_alias}}" &gt; {{valor}}
+ORDER BY "{{nome_do_alias}}" DESC;</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Só os grupos cuja média supera o valor, do maior para o menor.</p>
+    </article>
+  </section>
+
+  <!-- ===== Relacionamentos ===== -->
+  <section class="group" id="m-relacao" data-cat="relacao" aria-labelledby="h-m-relacao">
+    <h2 class="group-title" id="h-m-relacao">Relacionamentos e conjuntos</h2>
+    <p class="group-desc">Subconsultas, junções e operações de conjunto entre resultados.</p>
+
+    <article class="entry cmd" id="m-subconsulta" data-cat="relacao" data-keywords="subquery aninhada consulta dentro">
+      <h3>Subconsulta ( SELECT … )</h3>
+      <p><span class="field-label">Finalidade:</span> usa o resultado de uma consulta interna como valor ou lista na consulta externa.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">... WHERE {{nome_da_coluna}} = | IN (SELECT {{outra_coluna}} FROM {{outra_tabela}} WHERE {{condicao}});</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}" WHERE "{{coluna_chave}}" = (
+    SELECT "{{coluna_fk}}" FROM "{{outra_tabela}}" WHERE "{{coluna_2}}" = '{{texto}}'
+);</pre>
+    </article>
+
+    <article class="entry cmd" id="m-join" data-cat="relacao" data-keywords="inner join juntar tabelas on correspondencia">
+      <h3>[INNER] JOIN … ON</h3>
+      <p><span class="field-label">Finalidade:</span> junta duas tabelas, mantendo só as linhas que têm correspondência pela condição do <code>ON</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT ... FROM {{tabela_a}} [INNER] JOIN {{tabela_b}} ON {{tabela_a}}.{{nome_da_coluna}} = {{tabela_b}}.{{nome_da_coluna}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+JOIN "{{tabela_b}}" ON "{{tabela_b}}"."{{coluna_chave}}" = "{{tabela_a}}"."{{coluna_chave}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Linhas com as colunas das duas tabelas lado a lado.</p>
+    </article>
+
+    <article class="entry cmd" id="m-left-join" data-cat="relacao" data-keywords="left right full outer join externa preservar linhas">
+      <h3>LEFT | RIGHT | FULL JOIN <a class="badge-doc" href="https://www.sqlite.org/lang_select.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> junções externas: preservam as linhas sem correspondência da tabela da esquerda (<code>LEFT</code>), da direita (<code>RIGHT</code>) ou de ambas (<code>FULL</code>), completando com <code>NULL</code>. <code>RIGHT</code> e <code>FULL</code> exigem SQLite 3.39.0 ou posterior.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT ... FROM {{tabela_a}} LEFT | RIGHT | FULL [OUTER] JOIN {{tabela_b}} ON {{condicao}};</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+LEFT JOIN "{{tabela_b}}" ON "{{tabela_b}}"."{{coluna_chave}}" = "{{tabela_a}}"."{{coluna_chave}}";</pre>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}"
+FULL JOIN "{{tabela_b}}" ON "{{tabela_b}}"."{{coluna_chave}}" = "{{tabela_a}}"."{{coluna_chave}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-natural-join" data-cat="relacao" data-keywords="natural automatico mesmo nome">
+      <h3>NATURAL JOIN</h3>
+      <p><span class="field-label">Finalidade:</span> junta as tabelas automaticamente, sem <code>ON</code>, usando as colunas de mesmo nome nas duas tabelas.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">SELECT ... FROM {{tabela_a}} NATURAL JOIN {{tabela_b}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT * FROM "{{tabela_a}}" NATURAL JOIN "{{tabela_b}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>As colunas comuns aparecem uma só vez.</p>
+    </article>
+
+    <article class="entry cmd" id="m-union" data-cat="relacao" data-keywords="uniao combinar resultados all">
+      <h3>UNION</h3>
+      <p><span class="field-label">Finalidade:</span> junta as linhas de duas consultas com o mesmo número de colunas, sem repetições.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{consulta_1}} UNION [ALL] {{consulta_2}};</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{tabela_a}}"
+UNION
+SELECT "{{nome_da_coluna}}" FROM "{{tabela_b}}";</pre>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{tabela_a}}"
+UNION ALL
+SELECT "{{nome_da_coluna}}" FROM "{{tabela_b}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Todas as linhas das duas consultas. <a class="badge-doc" href="https://www.sqlite.org/lang_select.html#compound_select_statements" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Com <code>UNION ALL</code>, as linhas repetidas são mantidas.</p>
+    </article>
+
+    <article class="entry cmd" id="m-intersect" data-cat="relacao" data-keywords="intersecao em comum ambas">
+      <h3>INTERSECT <a class="badge-doc" href="https://www.sqlite.org/lang_select.html#compound_select_statements" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> devolve só as linhas presentes no resultado das duas consultas.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{consulta_1}} INTERSECT {{consulta_2}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{tabela_a}}"
+INTERSECT
+SELECT "{{nome_da_coluna}}" FROM "{{tabela_b}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-except" data-cat="relacao" data-keywords="diferenca exceto menos">
+      <h3>EXCEPT <a class="badge-doc" href="https://www.sqlite.org/lang_select.html#compound_select_statements" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> devolve as linhas da primeira consulta que não aparecem na segunda.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{consulta_1}} EXCEPT {{consulta_2}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">SELECT "{{nome_da_coluna}}" FROM "{{tabela_a}}"
+EXCEPT
+SELECT "{{nome_da_coluna}}" FROM "{{tabela_b}}";</pre>
+    </article>
+  </section>
+
+  <!-- ===== Estrutura ===== -->
+  <section class="group" id="m-definicao" data-cat="definicao" aria-labelledby="h-m-definicao">
+    <h2 class="group-title" id="h-m-definicao">Estrutura das tabelas</h2>
+    <p class="group-desc">Criar, alterar e excluir tabelas, com tipos e restrições.</p>
+
+    <article class="entry cmd" id="m-create-table" data-cat="definicao" data-keywords="criar tabela colunas tipos">
+      <h3>CREATE TABLE</h3>
+      <p><span class="field-label">Finalidade:</span> cria uma tabela com as colunas, os tipos e as restrições indicados.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">CREATE TABLE {{nome_da_tabela}} (
+    {{coluna_1}} [{{tipo}}] [{{restricoes}}],
+    {{coluna_2}} [{{tipo}}] [{{restricoes}}],
+    [{{restricoes_de_tabela}}]
+);</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE TABLE "{{nome_da_tabela}}" (
+    "{{coluna_chave}}" INTEGER,
+    "{{coluna_1}}" TEXT NOT NULL,
+    "{{coluna_2}}" REAL,
+    PRIMARY KEY ("{{coluna_chave}}")
+);</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Sem mensagem; a tabela aparece em <code>.schema</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-tipos" data-cat="definicao" data-keywords="tipos integer real text blob numeric null afinidade">
+      <h3>INTEGER, REAL, TEXT, BLOB, NUMERIC</h3>
+      <p><span class="field-label">Finalidade:</span> tipos declarados nas colunas. Os dados ficam guardados como <code>NULL</code>, <code>INTEGER</code>, <code>REAL</code>, <code>TEXT</code> ou <code>BLOB</code>; as colunas têm afinidade <code>TEXT</code>, <code>NUMERIC</code>, <code>INTEGER</code>, <code>REAL</code> ou <code>BLOB</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{nome_da_coluna}} INTEGER | REAL | TEXT | BLOB | NUMERIC</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE TABLE "{{nome_da_tabela}}" (
+    "{{coluna_1}}" INTEGER,
+    "{{coluna_2}}" REAL,
+    "{{coluna_3}}" TEXT
+);</pre>
+    </article>
+
+    <article class="entry cmd" id="m-primary-key" data-cat="definicao" data-keywords="chave primaria identificador unico">
+      <h3>PRIMARY KEY</h3>
+      <p><span class="field-label">Finalidade:</span> define a coluna que identifica cada linha de forma única.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">PRIMARY KEY ({{nome_da_coluna}})</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE TABLE "{{nome_da_tabela}}" (
+    "{{coluna_chave}}" INTEGER,
+    "{{coluna_1}}" TEXT,
+    PRIMARY KEY ("{{coluna_chave}}")
+);</pre>
+    </article>
+
+    <article class="entry cmd" id="m-foreign-key" data-cat="definicao" data-keywords="chave estrangeira references relacionamento on delete cascade">
+      <h3>FOREIGN KEY … REFERENCES [ON DELETE …]</h3>
+      <p><span class="field-label">Finalidade:</span> liga uma coluna à chave primária de outra tabela e, opcionalmente, define o que acontece quando a linha referenciada é excluída (<code>RESTRICT</code>, <code>NO ACTION</code>, <code>SET NULL</code>, <code>SET DEFAULT</code> ou <code>CASCADE</code>).</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">FOREIGN KEY ({{coluna_fk}}) REFERENCES {{tabela_referenciada}} ({{coluna_chave}}) [ON DELETE RESTRICT | NO ACTION | SET NULL | SET DEFAULT | CASCADE]</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">CREATE TABLE "{{tabela_de_juncao}}" (
+    "{{coluna_fk_a}}" INTEGER,
+    "{{coluna_fk_b}}" INTEGER,
+    FOREIGN KEY ("{{coluna_fk_a}}") REFERENCES "{{tabela_a}}" ("{{coluna_chave}}"),
+    FOREIGN KEY ("{{coluna_fk_b}}") REFERENCES "{{tabela_b}}" ("{{coluna_chave}}")
+);</pre>
+      <pre class="code" data-kind="sql">FOREIGN KEY ("{{coluna_fk_a}}") REFERENCES "{{tabela_a}}" ("{{coluna_chave}}") ON DELETE CASCADE</pre>
+    </article>
+
+    <article class="entry cmd" id="m-not-null" data-cat="definicao" data-keywords="obrigatorio nao nulo">
+      <h3>NOT NULL</h3>
+      <p><span class="field-label">Finalidade:</span> impede que a coluna receba valores nulos.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{nome_da_coluna}} {{tipo}} NOT NULL</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">"{{nome_da_coluna}}" TEXT NOT NULL,</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Um <code>INSERT</code> sem valor para a coluna falha com erro de restrição <code>NOT NULL</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-unique" data-cat="definicao" data-keywords="unico sem duplicados">
+      <h3>UNIQUE</h3>
+      <p><span class="field-label">Finalidade:</span> proíbe valores duplicados na mesma coluna.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{nome_da_coluna}} {{tipo}} UNIQUE</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">"{{nome_da_coluna}}" TEXT UNIQUE,</pre>
+    </article>
+
+    <article class="entry cmd" id="m-check" data-cat="definicao" data-keywords="validar condicao regra">
+      <h3>CHECK</h3>
+      <p><span class="field-label">Finalidade:</span> valida uma condição antes de permitir a inserção ou a atualização.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{nome_da_coluna}} {{tipo}} CHECK ({{condicao}})</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">"{{nome_da_coluna}}" NUMERIC NOT NULL CHECK ("{{nome_da_coluna}}" != {{valor}}),</pre>
+      <pre class="code" data-kind="sql">"{{nome_da_coluna}}" TEXT NOT NULL CHECK ("{{nome_da_coluna}}" IN ('{{texto_1}}', '{{texto_2}}')),</pre>
+    </article>
+
+    <article class="entry cmd" id="m-default" data-cat="definicao" data-keywords="valor padrao automatico current_timestamp">
+      <h3>DEFAULT</h3>
+      <p><span class="field-label">Finalidade:</span> define o valor usado automaticamente quando nenhum valor é informado.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">{{nome_da_coluna}} {{tipo}} DEFAULT {{valor_padrao}}</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">"{{nome_da_coluna}}" NUMERIC NOT NULL DEFAULT CURRENT_TIMESTAMP</pre>
+      <pre class="code" data-kind="sql">"{{nome_da_coluna}}" INTEGER DEFAULT 0</pre>
+    </article>
+
+    <article class="entry cmd" id="m-alter-rename" data-cat="definicao" data-keywords="alter table renomear tabela rename to">
+      <h3>ALTER TABLE … RENAME TO</h3>
+      <p><span class="field-label">Finalidade:</span> muda o nome de uma tabela.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">ALTER TABLE {{nome_da_tabela}} RENAME TO {{novo_nome}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" RENAME TO "{{novo_nome}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-alter-add" data-cat="definicao" data-keywords="alter table adicionar coluna add column">
+      <h3>ALTER TABLE … ADD COLUMN</h3>
+      <p><span class="field-label">Finalidade:</span> acrescenta uma coluna a uma tabela existente.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">ALTER TABLE {{nome_da_tabela}} ADD COLUMN {{nome_da_coluna}} [{{tipo}}] [{{restricoes}}];</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" ADD COLUMN "{{nome_da_coluna}}" TEXT;</pre>
+    </article>
+
+    <article class="entry cmd" id="m-alter-rename-col" data-cat="definicao" data-keywords="alter table renomear coluna rename column">
+      <h3>ALTER TABLE … RENAME COLUMN … TO</h3>
+      <p><span class="field-label">Finalidade:</span> muda o nome de uma coluna.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">ALTER TABLE {{nome_da_tabela}} RENAME COLUMN {{nome_da_coluna}} TO {{novo_nome}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" RENAME COLUMN "{{nome_da_coluna}}" TO "{{novo_nome}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-alter-drop" data-cat="definicao" data-keywords="alter table remover coluna drop column">
+      <h3>ALTER TABLE … DROP COLUMN</h3>
+      <p><span class="field-label">Finalidade:</span> remove uma coluna e os dados dela.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">ALTER TABLE {{nome_da_tabela}} DROP COLUMN {{nome_da_coluna}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">ALTER TABLE "{{nome_da_tabela}}" DROP COLUMN "{{nome_da_coluna}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-drop-table" data-cat="definicao" data-keywords="excluir apagar remover tabela if exists">
+      <h3>DROP TABLE</h3>
+      <p><span class="field-label">Finalidade:</span> exclui a tabela e todos os seus dados.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">DROP TABLE [IF EXISTS] {{nome_da_tabela}};</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">DROP TABLE "{{nome_da_tabela}}";</pre>
+      <pre class="code" data-kind="sql">DROP TABLE IF EXISTS "{{nome_da_tabela}}";</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>A tabela some de <code>.schema</code>. <a class="badge-doc" href="https://www.sqlite.org/lang_droptable.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Com <code>IF EXISTS</code>, não há erro se a tabela não existir.</p>
+    </article>
+  </section>
+
+  <!-- ===== Manipulação ===== -->
+  <section class="group" id="m-manipulacao" data-cat="manipulacao" aria-labelledby="h-m-manipulacao">
+    <h2 class="group-title" id="h-m-manipulacao">Manipulação de dados</h2>
+    <p class="group-desc">Inserir, atualizar e excluir linhas, e funções de texto usadas na limpeza.</p>
+
+    <article class="entry cmd" id="m-insert" data-cat="manipulacao" data-keywords="inserir adicionar linha values">
+      <h3>INSERT INTO … VALUES</h3>
+      <p><span class="field-label">Finalidade:</span> insere uma ou mais linhas, com os valores na ordem das colunas listadas.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">INSERT INTO {{nome_da_tabela}} ({{coluna_1}}, {{coluna_2}}, ...)
+VALUES ({{valor_1}}, {{valor_2}}, ...)[, (...)];</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">INSERT INTO "{{nome_da_tabela}}" ("{{coluna_1}}", "{{coluna_2}}")
+VALUES ('{{texto}}', 1);</pre>
+      <pre class="code" data-kind="sql">INSERT INTO "{{nome_da_tabela}}" ("{{coluna_1}}", "{{coluna_2}}")
+VALUES
+('{{texto_1}}', 1),
+('{{texto_2}}', 2);</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Sem mensagem; as linhas aparecem em um <code>SELECT</code>. <a class="badge-doc" href="https://www.sqlite.org/lang_insert.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Colunas omitidas recebem o valor <code>DEFAULT</code> ou, se não houver, <code>NULL</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-insert-select" data-cat="manipulacao" data-keywords="inserir copiar de outra tabela select temporaria">
+      <h3>INSERT INTO … SELECT</h3>
+      <p><span class="field-label">Finalidade:</span> insere o resultado de uma consulta, por exemplo copiando dados de uma tabela temporária.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">INSERT INTO {{nome_da_tabela}} ({{colunas}}) SELECT {{colunas}} FROM {{outra_tabela}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">INSERT INTO "{{nome_da_tabela}}" ("{{coluna_1}}", "{{coluna_2}}")
+SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{tabela_temporaria}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-update" data-cat="manipulacao" data-keywords="atualizar alterar modificar set">
+      <h3>UPDATE … SET</h3>
+      <p><span class="field-label">Finalidade:</span> altera valores das linhas que atendem à condição.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">UPDATE {{nome_da_tabela}} SET {{coluna_1}} = {{valor_1}}[, {{coluna_2}} = {{valor_2}}] [WHERE {{condicao}}];</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = '{{texto}}'
+WHERE "{{coluna_chave}}" = 1;</pre>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = "{{nome_da_coluna}}" + {{valor}}
+WHERE {{condicao}};</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Sem mensagem; o novo valor aparece em um <code>SELECT</code>. Sem <code>WHERE</code>, todas as linhas são alteradas.</p>
+    </article>
+
+    <article class="entry cmd" id="m-delete" data-cat="manipulacao" data-keywords="excluir apagar remover linhas">
+      <h3>DELETE FROM</h3>
+      <p><span class="field-label">Finalidade:</span> exclui as linhas que atendem à condição.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">DELETE FROM {{nome_da_tabela}} [WHERE {{condicao}}];</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">DELETE FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" = '{{texto}}';</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Sem mensagem; as linhas deixam de existir. Sem <code>WHERE</code>, todas as linhas são excluídas.</p>
+    </article>
+
+    <article class="entry cmd" id="m-trim" data-cat="manipulacao" data-keywords="remover espacos limpar texto">
+      <h3>trim()</h3>
+      <p><span class="field-label">Finalidade:</span> remove os espaços do início e do fim de um texto.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">trim({{texto}})</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = trim("{{nome_da_coluna}}");</pre>
+    </article>
+
+    <article class="entry cmd" id="m-upper" data-cat="manipulacao" data-keywords="maiusculas minusculas caixa alta baixa padronizar">
+      <h3>upper() / lower()</h3>
+      <p><span class="field-label">Finalidade:</span> convertem o texto para maiúsculas / minúsculas.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">upper({{texto}}) | lower({{texto}})</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = upper("{{nome_da_coluna}}");</pre>
+      <pre class="code" data-kind="sql">UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = lower("{{nome_da_coluna}}");</pre>
+    </article>
+  </section>
+
+  <!-- ===== Visões ===== -->
+  <section class="group" id="m-visoes" data-cat="visoes" aria-labelledby="h-m-visoes">
+    <h2 class="group-title" id="h-m-visoes">Visões, CTE e gatilhos</h2>
+    <p class="group-desc">Consultas nomeadas e ações automáticas disparadas por eventos.</p>
+
+    <article class="entry cmd" id="m-create-view" data-cat="visoes" data-keywords="view visao consulta salva">
+      <h3>CREATE VIEW</h3>
+      <p><span class="field-label">Finalidade:</span> salva uma consulta com um nome, para ser usada como uma tabela.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">CREATE VIEW {{nome_da_visao}} AS {{consulta}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE VIEW "{{nome_da_visao}}" AS
+SELECT "{{coluna_1}}", "{{coluna_2}}" FROM "{{nome_da_tabela}}"
+WHERE {{condicao}};</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Sem mensagem; depois, <code>SELECT * FROM "nome_da_visao";</code> devolve o resultado da consulta salva.</p>
+    </article>
+
+    <article class="entry cmd" id="m-temp-view" data-cat="visoes" data-keywords="temporaria temporary view conexao">
+      <h3>CREATE TEMPORARY VIEW</h3>
+      <p><span class="field-label">Finalidade:</span> cria uma visão que vale só durante a conexão atual.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">CREATE TEMPORARY VIEW {{nome_da_visao}} AS {{consulta}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE TEMPORARY VIEW "{{nome_da_visao}}" AS
+SELECT "{{coluna_1}}" FROM "{{nome_da_tabela}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-drop-view" data-cat="visoes" data-keywords="excluir visao remover view">
+      <h3>DROP VIEW <a class="badge-doc" href="https://www.sqlite.org/lang_dropview.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> remove uma visão; os dados das tabelas usadas por ela não são afetados.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">DROP VIEW [IF EXISTS] {{nome_da_visao}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">DROP VIEW "{{nome_da_visao}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-with" data-cat="visoes" data-keywords="cte common table expression expressao de tabela">
+      <h3>WITH (CTE)</h3>
+      <p><span class="field-label">Finalidade:</span> define consultas nomeadas que existem só durante a instrução em que aparecem.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">WITH {{nome_da_cte}} AS ({{consulta}})[, {{outra_cte}} AS ({{consulta}})]
+SELECT ... FROM {{nome_da_cte}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">WITH "{{nome_da_cte}}" AS (
+    SELECT "{{coluna_1}}", COUNT(*) AS "{{nome_do_alias}}"
+    FROM "{{nome_da_tabela}}"
+    GROUP BY "{{coluna_1}}"
+)
+SELECT * FROM "{{nome_da_cte}}" ORDER BY "{{nome_do_alias}}" DESC;</pre>
+    </article>
+
+    <article class="entry cmd" id="m-trigger" data-cat="visoes" data-keywords="gatilho trigger before after insert update delete old new">
+      <h3>CREATE TRIGGER … BEFORE | AFTER</h3>
+      <p><span class="field-label">Finalidade:</span> executa instruções automaticamente antes ou depois de um <code>INSERT</code>, <code>UPDATE</code> ou <code>DELETE</code> na tabela.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">CREATE TRIGGER {{nome_do_gatilho}}
+BEFORE | AFTER INSERT | UPDATE | DELETE ON {{nome_da_tabela}}
+BEGIN
+    {{instrucoes}};
+END;</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE TRIGGER "{{nome_do_gatilho}}"
+AFTER INSERT ON "{{nome_da_tabela}}"
+BEGIN
+    INSERT INTO "{{tabela_de_registro}}" ("{{coluna_1}}", "{{coluna_2}}")
+    VALUES (NEW."{{coluna_1}}", '{{texto}}');
+END;</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>A cada nova linha na tabela, uma linha correspondente aparece na tabela de registro.</p>
+    </article>
+
+    <article class="entry cmd" id="m-instead-of" data-cat="visoes" data-keywords="instead of gatilho visao for each row when soft deletion">
+      <h3>CREATE TRIGGER … INSTEAD OF</h3>
+      <p><span class="field-label">Finalidade:</span> em uma visão, executa outras instruções no lugar de um <code>DELETE</code>, <code>INSERT</code> ou <code>UPDATE</code>; <code>WHEN</code> restringe quando o gatilho roda.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">CREATE TRIGGER {{nome_do_gatilho}}
+INSTEAD OF DELETE | INSERT | UPDATE ON {{nome_da_visao}}
+FOR EACH ROW
+[WHEN {{condicao}}]
+BEGIN
+    {{instrucoes}};
+END;</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE TRIGGER "{{nome_do_gatilho}}"
+INSTEAD OF DELETE ON "{{nome_da_visao}}"
+FOR EACH ROW
+BEGIN
+    UPDATE "{{nome_da_tabela}}" SET "{{coluna_de_exclusao}}" = 1
+    WHERE "{{coluna_chave}}" = OLD."{{coluna_chave}}";
+END;</pre>
+    </article>
+
+    <article class="entry cmd" id="m-drop-trigger" data-cat="visoes" data-keywords="excluir gatilho remover trigger">
+      <h3>DROP TRIGGER <a class="badge-doc" href="https://www.sqlite.org/lang_droptrigger.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> remove um gatilho.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">DROP TRIGGER [IF EXISTS] {{nome_do_gatilho}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">DROP TRIGGER "{{nome_do_gatilho}}";</pre>
+    </article>
+  </section>
+
+  <!-- ===== Desempenho ===== -->
+  <section class="group" id="m-desempenho" data-cat="desempenho" aria-labelledby="h-m-desempenho">
+    <h2 class="group-title" id="h-m-desempenho">Índices, transações e manutenção</h2>
+    <p class="group-desc">Acelerar consultas, garantir que grupos de alterações sejam aplicados juntos e manter o arquivo enxuto.</p>
+
+    <article class="entry cmd" id="m-create-index" data-cat="desempenho" data-keywords="indice acelerar busca">
+      <h3>CREATE INDEX</h3>
+      <p><span class="field-label">Finalidade:</span> cria um índice sobre uma ou mais colunas para acelerar buscas.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">CREATE INDEX {{nome_do_indice}} ON {{nome_da_tabela}} ({{coluna_1}}[, {{coluna_2}}]);</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE INDEX "{{nome_do_indice}}" ON "{{nome_da_tabela}}" ("{{nome_da_coluna}}");</pre>
+    </article>
+
+    <article class="entry cmd" id="m-partial-index" data-cat="desempenho" data-keywords="indice parcial where condicao">
+      <h3>CREATE INDEX … WHERE (índice parcial)</h3>
+      <p><span class="field-label">Finalidade:</span> indexa só as linhas que atendem a uma condição.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">CREATE INDEX {{nome_do_indice}} ON {{nome_da_tabela}} ({{nome_da_coluna}}) WHERE {{condicao}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">CREATE INDEX "{{nome_do_indice}}" ON "{{nome_da_tabela}}" ("{{nome_da_coluna}}")
+WHERE "{{coluna_2}}" = {{valor}};</pre>
+    </article>
+
+    <article class="entry cmd" id="m-drop-index" data-cat="desempenho" data-keywords="excluir indice remover">
+      <h3>DROP INDEX <a class="badge-doc" href="https://www.sqlite.org/lang_dropindex.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> remove um índice.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">DROP INDEX [IF EXISTS] {{nome_do_indice}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">DROP INDEX "{{nome_do_indice}}";</pre>
+    </article>
+
+    <article class="entry cmd" id="m-eqp" data-cat="desempenho" data-keywords="explain query plan plano de consulta verificar indice scan search">
+      <h3>EXPLAIN QUERY PLAN</h3>
+      <p><span class="field-label">Finalidade:</span> mostra como o SQLite pretende executar a consulta, permitindo ver se um índice será usado.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">EXPLAIN QUERY PLAN {{consulta}};</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">EXPLAIN QUERY PLAN
+SELECT * FROM "{{nome_da_tabela}}" WHERE "{{nome_da_coluna}}" = '{{texto}}';</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span><a class="badge-doc" href="https://www.sqlite.org/eqp.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Sem índice, algo como <code>SCAN nome_da_tabela</code>; com índice, <code>SEARCH nome_da_tabela USING INDEX nome_do_indice (nome_da_coluna=?)</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-begin" data-cat="desempenho" data-keywords="transacao begin commit confirmar">
+      <h3>BEGIN TRANSACTION … COMMIT</h3>
+      <p><span class="field-label">Finalidade:</span> agrupa instruções e confirma todas de uma vez no <code>COMMIT</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">BEGIN TRANSACTION;
+{{instrucoes}};
+COMMIT;</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">BEGIN TRANSACTION;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = "{{nome_da_coluna}}" + {{valor}} WHERE "{{coluna_chave}}" = 2;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = "{{nome_da_coluna}}" - {{valor}} WHERE "{{coluna_chave}}" = 1;
+COMMIT;</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>As duas alterações passam a valer juntas.</p>
+    </article>
+
+    <article class="entry cmd" id="m-rollback" data-cat="desempenho" data-keywords="desfazer cancelar transacao erro">
+      <h3>ROLLBACK</h3>
+      <p><span class="field-label">Finalidade:</span> desfaz todas as alterações feitas desde o <code>BEGIN</code>.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">BEGIN TRANSACTION;
+{{instrucoes}};
+ROLLBACK;</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">BEGIN TRANSACTION;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = {{valor}} WHERE {{condicao}};
+ROLLBACK;</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>A tabela volta ao estado anterior ao <code>BEGIN</code>.</p>
+    </article>
+
+    <article class="entry cmd" id="m-exclusive" data-cat="desempenho" data-keywords="exclusiva bloqueio exclusive transacao">
+      <h3>BEGIN EXCLUSIVE TRANSACTION</h3>
+      <p><span class="field-label">Finalidade:</span> inicia uma transação exclusiva. <a class="badge-doc" href="https://www.sqlite.org/lang_transaction.html" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a> Fora do modo WAL, outras conexões ficam impedidas de ler o banco até ela terminar.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">BEGIN EXCLUSIVE TRANSACTION;</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">BEGIN EXCLUSIVE TRANSACTION;
+UPDATE "{{nome_da_tabela}}" SET "{{nome_da_coluna}}" = {{valor}} WHERE {{condicao}};
+COMMIT;</pre>
+    </article>
+
+    <article class="entry cmd" id="m-vacuum" data-cat="desempenho" data-keywords="liberar espaco compactar reconstruir arquivo">
+      <h3>VACUUM</h3>
+      <p><span class="field-label">Finalidade:</span> libera o espaço deixado por dados excluídos, reconstruindo o arquivo do banco.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">VACUUM;</pre>
+      <h4>Exemplo</h4>
+      <pre class="code" data-kind="sql">VACUUM;</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>Sem mensagem; o arquivo fica menor se havia espaço livre (confira com <code>du -b</code>).</p>
+    </article>
+
+    <article class="entry cmd" id="m-pragma-fk" data-cat="desempenho" data-keywords="pragma foreign keys chaves estrangeiras ativar">
+      <h3>PRAGMA foreign_keys <a class="badge-doc" href="https://www.sqlite.org/foreignkeys.html#fk_enable" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> liga ou consulta a verificação de chaves estrangeiras, que vem desativada e vale por conexão.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">PRAGMA foreign_keys [= ON | OFF];</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">PRAGMA foreign_keys = ON;</pre>
+      <pre class="code" data-kind="sql">PRAGMA foreign_keys;</pre>
+      <p class="result"><span class="field-label">Resultado esperado</span>A consulta devolve <code>1</code> (ativada) ou <code>0</code> (desativada).</p>
+    </article>
+
+    <article class="entry cmd" id="m-pragma-size" data-cat="desempenho" data-keywords="pragma page count page size tamanho do banco paginas">
+      <h3>PRAGMA page_count / page_size <a class="badge-doc" href="https://www.sqlite.org/pragma.html#pragma_page_count" target="_blank" rel="noopener">complemento da documentação oficial <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a></h3>
+      <p><span class="field-label">Finalidade:</span> informam o número de páginas do banco e o tamanho de cada página em bytes; multiplicados, dão o tamanho do arquivo.</p>
+      <h4>Sintaxe</h4>
+      <pre class="code" data-kind="syntax">PRAGMA page_count;
+PRAGMA page_size;</pre>
+      <h4>Exemplos</h4>
+      <pre class="code" data-kind="sql">PRAGMA page_count;</pre>
+      <pre class="code" data-kind="sql">PRAGMA page_size;</pre>
+    </article>
+  </section>
+</div>
+
+<footer class="footer">
+  <p>Material de estudo complementar ao repositório <a href="https://github.com/fernandofigueiredo-data/cs50-harvard-sql" target="_blank" rel="noopener">cs50-harvard-sql</a>, com as soluções dos 19 problemas do CS50 SQL (Harvard).</p>
+  <p>Conteúdo baseado nas anotações do curso de SQL. Itens marcados com o selo “complemento da documentação oficial” e as notas de divergência vêm de <a href="https://www.sqlite.org/docs.html" target="_blank" rel="noopener">sqlite.org/docs.html</a>.</p>
+</footer>
+
+</div>
+</main>
+
+<div class="sr-only" id="copy-live" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Destaque de sintaxe (sem bibliotecas) ---------- */
+  var KEYWORDS = new Set(('SELECT FROM WHERE LIMIT OFFSET AND OR NOT NULL IS LIKE BETWEEN ORDER BY ASC DESC AS DISTINCT IN ' +
+    'JOIN INNER LEFT RIGHT FULL OUTER NATURAL ON USING UNION INTERSECT EXCEPT ALL GROUP HAVING CREATE TABLE PRIMARY KEY ' +
+    'FOREIGN REFERENCES UNIQUE CHECK DEFAULT DROP ALTER ADD COLUMN RENAME TO INSERT INTO VALUES DELETE UPDATE SET ' +
+    'CASCADE RESTRICT NO ACTION TRIGGER BEFORE AFTER INSTEAD OF FOR EACH ROW WHEN BEGIN END NEW OLD VIEW TEMPORARY TEMP ' +
+    'WITH INDEX EXPLAIN QUERY PLAN VACUUM TRANSACTION COMMIT ROLLBACK EXCLUSIVE IF EXISTS PRAGMA CURRENT_TIMESTAMP ' +
+    'INTEGER TEXT REAL BLOB NUMERIC').split(' '));
+  var FUNCTIONS = new Set('COUNT AVG MIN MAX SUM ROUND TRIM UPPER LOWER'.split(' '));
+  var SHELL = new Set(['mkdir', 'cd', 'code', 'sqlite3', 'du']);
+  var PH_RE = /\{\{([^}]+)\}\}/g;
+
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function span(cls, text) {
+    return text ? '<span class="' + cls + '">' + esc(text) + '</span>' : '';
+  }
+  function ph(name) {
+    return '<span class="ph">' + esc(name) + '</span>';
+  }
+  // Texto entre aspas que pode conter marcadores
+  function quoted(text, cls) {
+    var out = '', last = 0, m;
+    PH_RE.lastIndex = 0;
+    while ((m = PH_RE.exec(text))) {
+      out += span(cls, text.slice(last, m.index)) + ph(m[1]);
+      last = m.index + m[0].length;
+    }
+    return out + span(cls, text.slice(last));
+  }
+
+  function highlight(src, kind) {
+    var out = '', i = 0, lineStart = true, m, rest, word, upper, next;
+    var allowOpts = kind === 'terminal' || kind === 'dot' || kind === 'syntax';
+    while (i < src.length) {
+      rest = src.slice(i);
+      if (rest[0] === '\n') { out += '\n'; i++; lineStart = true; continue; }
+      if ((m = rest.match(/^[ \t]+/))) { out += m[0]; i += m[0].length; continue; }
+
+      if ((m = rest.match(/^\{\{([^}]+)\}\}/))) {
+        out += ph(m[1]);
+      } else if ((m = rest.match(/^--(?=\s|$)[^\n]*/))) {
+        out += span('tok-com', m[0]);
+      } else if (allowOpts && (m = rest.match(/^--?[A-Za-z][\w-]*/))) {
+        out += span('tok-opt', m[0]);
+      } else if ((m = rest.match(/^'[^'\n]*'/))) {
+        out += quoted(m[0], 'tok-str');
+      } else if ((m = rest.match(/^"[^"\n]*"/))) {
+        out += quoted(m[0], 'tok-id');
+      } else if (lineStart && (m = rest.match(/^\.[a-z]+/))) {
+        out += span('tok-cmd', m[0]);
+      } else if ((m = rest.match(/^\d+(?:\.\d+)?(?![\w])/))) {
+        out += span('tok-num', m[0]);
+      } else if ((m = rest.match(/^[A-Za-z_][\w]*/))) {
+        word = m[0]; upper = word.toUpperCase();
+        next = src.slice(i + word.length).match(/^\s*(.)/);
+        if (kind === 'terminal' && lineStart && SHELL.has(word)) {
+          out += span('tok-cmd', word);
+        } else if (FUNCTIONS.has(upper) && next && next[1] === '(') {
+          out += span('tok-fn', word);
+        } else if (KEYWORDS.has(upper) && (word === upper || kind !== 'terminal')) {
+          out += span('tok-kw', word);
+        } else {
+          out += esc(word);
+        }
+      } else {
+        out += esc(rest[0]); i++; lineStart = false; continue;
+      }
+      i += m[0].length;
+      lineStart = false;
+    }
+    return out;
+  }
+
+  var LABELS = {
+    sql: 'SQL',
+    dot: 'sqlite3 · comando de ponto',
+    terminal: 'Terminal',
+    syntax: 'Sintaxe'
+  };
+
+  function iconSvg(id) {
+    return '<svg class="i" aria-hidden="true"><use href="#' + id + '"/></svg>';
+  }
+
+  function enhanceCode() {
+    var blocks = document.querySelectorAll('pre.code');
+    blocks.forEach(function (pre) {
+      var raw = pre.textContent.replace(/^\n+|\s+$/g, '');
+      var kind = pre.getAttribute('data-kind') || 'sql';
+      var label = LABELS[kind] || 'Código';
+      var copyText = raw.replace(PH_RE, '$1');
+
+      var wrap = document.createElement('div');
+      wrap.className = 'code-block' + (kind === 'syntax' ? ' is-syntax' : '');
+
+      var head = document.createElement('div');
+      head.className = 'code-head';
+      head.innerHTML = '<span class="code-label">' + esc(label) + '</span>';
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'copy-btn';
+      btn.setAttribute('aria-label', 'Copiar código: ' + label);
+      btn.innerHTML = iconSvg('i-copy') + '<span>Copiar</span>';
+      btn._copyText = copyText;
+      head.appendChild(btn);
+
+      var newPre = document.createElement('pre');
+      newPre.tabIndex = 0;
+      newPre.setAttribute('aria-label', label);
+      var code = document.createElement('code');
+      code.innerHTML = highlight(raw, kind);
+      newPre.appendChild(code);
+
+      wrap.appendChild(head);
+      wrap.appendChild(newPre);
+      pre.replaceWith(wrap);
+    });
+  }
+
+  /* ---------- Copiar ---------- */
+  var live = document.getElementById('copy-live');
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function copy(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest('.copy-btn');
+    if (!btn) return;
+    copy(btn._copyText || '').then(function (ok) {
+      var labelEl = btn.querySelector('span');
+      clearTimeout(btn._timer);
+      if (ok) {
+        btn.classList.add('is-copied');
+        btn.innerHTML = iconSvg('i-check') + '<span>Copiado</span>';
+        live.textContent = 'Código copiado para a área de transferência.';
+      } else {
+        labelEl.textContent = 'Falhou';
+        live.textContent = 'Não foi possível copiar. Selecione o texto manualmente.';
+      }
+      btn._timer = setTimeout(function () {
+        btn.classList.remove('is-copied');
+        btn.innerHTML = iconSvg('i-copy') + '<span>Copiar</span>';
+      }, 1600);
+    });
+  });
+
+  /* ---------- Busca e filtro ---------- */
+  var CAT_NAMES = {
+    terminal: 'Terminal',
+    ponto: 'Comandos de ponto',
+    consulta: 'Consultas',
+    relacao: 'Relacionamentos',
+    definicao: 'Estrutura',
+    manipulacao: 'Manipulação',
+    visoes: 'Visões e gatilhos',
+    desempenho: 'Índices e transações'
+  };
+
+  function norm(s) {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+
+  var entries = Array.prototype.slice.call(document.querySelectorAll('.entry'));
+  var groups = Array.prototype.slice.call(document.querySelectorAll('section.group'));
+  var parts = Array.prototype.slice.call(document.querySelectorAll('.part'));
+  var search = document.getElementById('search');
+  var clearBtn = document.getElementById('search-clear');
+  var kbd = document.getElementById('search-kbd');
+  var status = document.getElementById('search-status');
+  var empty = document.getElementById('empty');
+  var chips = Array.prototype.slice.call(document.querySelectorAll('#chips .chip'));
+  var activeCat = 'todas';
+
+  function addCategoryTags() {
+    entries.forEach(function (el) {
+      var cat = el.getAttribute('data-cat');
+      if (!cat || !CAT_NAMES[cat]) return;
+      var h3 = el.querySelector('h3');
+      var tag = document.createElement('span');
+      tag.className = 'cat-tag';
+      tag.textContent = CAT_NAMES[cat];
+      h3.appendChild(tag);
+    });
+  }
+
+  function indexEntries() {
+    entries.forEach(function (el) {
+      el._text = norm(el.textContent + ' ' + (el.getAttribute('data-keywords') || ''));
+    });
+  }
+
+  function applyFilters() {
+    var q = norm(search.value.trim());
+    var terms = q ? q.split(/\s+/) : [];
+    var total = 0;
+
+    entries.forEach(function (el) {
+      var cat = el.getAttribute('data-cat');
+      var catOk = activeCat === 'todas' || !cat || cat === activeCat;
+      // o filtro de categoria vale para o Manual; conceitos só aparecem com "Todas"
+      if (activeCat !== 'todas' && !cat) catOk = false;
+      var textOk = terms.every(function (t) { return el._text.indexOf(t) !== -1; });
+      var show = catOk && textOk;
+      el.hidden = !show;
+      if (show) total++;
+    });
+
+    groups.forEach(function (g) {
+      var visible = g.querySelectorAll('.entry:not([hidden])').length;
+      g.hidden = visible === 0;
+      var link = document.querySelector('.nav-list a[href="#' + g.id + '"]');
+      if (link) link.parentElement.hidden = visible === 0;
+    });
+
+    parts.forEach(function (p) {
+      p.hidden = p.querySelectorAll('section.group:not([hidden])').length === 0 &&
+        !(p.id === 'manual' && activeCat !== 'todas');
+    });
+
+    var filtering = terms.length > 0 || activeCat !== 'todas';
+    if (filtering) {
+      status.textContent = total === 1 ? '1 item encontrado.' : total + ' itens encontrados.';
+    } else {
+      status.textContent = '';
+    }
+    empty.hidden = total !== 0;
+    clearBtn.hidden = search.value === '';
+    kbd.hidden = search.value !== '';
+    updateSpy();
+  }
+
+  var debounce;
+  search.addEventListener('input', function () {
+    clearTimeout(debounce);
+    debounce = setTimeout(applyFilters, 80);
+  });
+  search.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') {
+      search.value = '';
+      applyFilters();
+    } else if (ev.key === 'Enter') {
+      var first = document.querySelector('.entry:not([hidden])');
+      if (first) {
+        first.scrollIntoView({ block: 'start' });
+      }
+    }
+  });
+  clearBtn.addEventListener('click', function () {
+    search.value = '';
+    applyFilters();
+    search.focus();
+  });
+
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      activeCat = chip.getAttribute('data-cat');
+      chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c === chip)); });
+      applyFilters();
+    });
+  });
+
+  document.querySelectorAll('[data-suggest]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      search.value = b.getAttribute('data-suggest');
+      activeCat = 'todas';
+      chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c.getAttribute('data-cat') === 'todas')); });
+      applyFilters();
+      search.focus();
+    });
+  });
+
+  /* ---------- Navegação: seção atual durante a rolagem ---------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-list a'));
+  var partLinks = Array.prototype.slice.call(document.querySelectorAll('.part-switch a'));
+  var headerH = 64;
+  var ticking = false;
+
+  function updateSpy() {
+    var current = null;
+    var y = headerH + 32;
+    for (var k = 0; k < groups.length; k++) {
+      var g = groups[k];
+      if (g.hidden || (g.closest('.part') && g.closest('.part').hidden)) continue;
+      if (g.getBoundingClientRect().top - y <= 0) current = g;
+      else if (!current) { current = g; break; }
+      else break;
+    }
+    var id = current ? current.id : null;
+    navLinks.forEach(function (a) {
+      if (a.getAttribute('href') === '#' + id) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+    });
+    var partId = current ? current.closest('.part').id : 'fundamentos';
+    var heroBottom = document.getElementById('inicio').getBoundingClientRect().bottom;
+    partLinks.forEach(function (a) {
+      if (heroBottom > y) a.removeAttribute('aria-current');
+      else if (a.getAttribute('data-part') === partId) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+    });
+  }
+
+  window.addEventListener('scroll', function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { updateSpy(); ticking = false; });
+  }, { passive: true });
+  window.addEventListener('resize', updateSpy);
+
+  /* ---------- Menu no celular ---------- */
+  var menuBtn = document.getElementById('menu-btn');
+  var backdrop = document.getElementById('backdrop');
+
+  function setNav(open) {
+    document.body.classList.toggle('nav-open', open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+  }
+  menuBtn.addEventListener('click', function () {
+    setNav(!document.body.classList.contains('nav-open'));
+  });
+  backdrop.addEventListener('click', function () { setNav(false); });
+  navLinks.forEach(function (a) {
+    a.addEventListener('click', function () { setNav(false); });
+  });
+
+  /* ---------- Atalhos de teclado ---------- */
+  document.addEventListener('keydown', function (ev) {
+    var tag = (ev.target.tagName || '').toLowerCase();
+    var typing = tag === 'input' || tag === 'textarea' || ev.target.isContentEditable;
+    if (ev.key === '/' && !typing && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
+      ev.preventDefault();
+      search.focus();
+      search.select();
+    } else if (ev.key === 'Escape' && document.body.classList.contains('nav-open')) {
+      setNav(false);
+      menuBtn.focus();
+    }
+  });
+
+  /* ---------- Início ---------- */
+  enhanceCode();
+  addCategoryTags();
+  indexEntries();
+  applyFilters();
+})();
+</script>
+</body>
+</html>
