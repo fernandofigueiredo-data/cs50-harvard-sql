@@ -93,6 +93,16 @@ Cada pasta tem um README com contexto, problema a resolver, diagrama ER, a solu�
 | [From the Deep](07-escala/deep/) | Distribuir observações de um submarino entre 3 servidores | particionamento aleatório, por intervalo e por hash |
 | [Don't Panic! (Python)](07-escala/dont-panic-python/) | Automatizar o pentest da Etapa 4 | Python + SQL parametrizado |
 
+## Material de estudo: guia interativo de SQLite
+
+[**Abrir o guia**](https://fernandofigueiredo-data.github.io/cs50-harvard-sql/guia-sqlite/) · [código-fonte](docs/guia-sqlite/index.html)
+
+Página de referência em português que complementa as soluções. A primeira parte reúne os conceitos do curso na ordem das aulas: consultas, relacionamentos, modelagem, escrita, views e otimização. A segunda é um manual com 77 comandos do cliente `sqlite3` e de SQL, cada um com sintaxe, finalidade, exemplo copiável e resultado esperado. A página tem busca instantânea e filtro por categoria, e funciona offline: é um único arquivo HTML, sem dependências.
+
+- Os exemplos são genéricos, com marcadores (`nome_da_tabela`, `condicao`) para adaptar a qualquer banco.
+- O que vai além das anotações do curso leva o selo "complemento da documentação oficial", com link para [sqlite.org](https://www.sqlite.org/docs.html). Onde as anotações divergem da documentação, há uma nota ao lado do trecho (8 casos).
+- Cores, tipografia e componentes seguem o design system em [`docs/guia-sqlite/design-system/MASTER.md`](docs/guia-sqlite/design-system/MASTER.md).
+
 ## Qualidade: como as soluções são verificadas
 
 A cada push, o [GitHub Actions](.github/workflows/verificar.yml) baixa os bancos oficiais e roda [`scripts/verificar.sh`](scripts/verificar.sh); o resultado aparece no selo do topo. O script roda todas as soluções contra os bancos oficiais e compara o resultado com as **contagens de linhas publicadas nos enunciados**. Quando o enunciado não publica contagem, a comparação é feita com valores conferidos manualmente. O script também confere colunas das views, planos de execução, constraints e efeitos dos scripts de escrita. Nenhum banco é alterado: as consultas rodam em modo somente leitura e as views viram `TEMP VIEW`.
@@ -140,6 +150,7 @@ sqlite3 moneyball.db < 12.sql
 ├── 06-otimizacao/        snap · harvard                  (+ consultas.sql com as consultas otimizadas)
 ├── 07-escala/            connect-mysql · deep · dont-panic-python
 ├── docs/                 gráfico e dados do benchmark
+│   └── guia-sqlite/      guia interativo de SQLite (index.html + design system)
 ├── .github/workflows/    CI: verificar.yml (SQLite) e verificar-mysql.yml (MySQL)
 └── scripts/
     ├── baixar_dados.sh       # baixa os bancos oficiais
